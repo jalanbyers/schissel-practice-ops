@@ -6,9 +6,11 @@ import type { MockState } from '@/lib/mock-data';
 
 interface TileMapProps {
   states: MockState[];
+  /** When provided, each tile becomes clickable and calls onSelect with the state code. */
+  onSelect?: (code: string) => void;
 }
 
-export function TileMap({ states }: TileMapProps) {
+export function TileMap({ states, onSelect }: TileMapProps) {
   const byCode = Object.fromEntries(states.map(s => [s.code, s]));
 
   return (
@@ -35,8 +37,9 @@ export function TileMap({ states }: TileMapProps) {
           <div
             key={code}
             className={`tile mini s-${s.status}${s.home ? ' home' : ''}`}
-            style={{ gridColumn: col, gridRow: row }}
+            style={{ gridColumn: col, gridRow: row, cursor: onSelect ? 'pointer' : undefined }}
             title={title}
+            onClick={onSelect ? () => onSelect(code) : undefined}
           >
             {s.imlc && <span className="imlc-dot" />}
             <span className="tile-code">{code}</span>
