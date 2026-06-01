@@ -47,6 +47,40 @@ export const LICENSE_STATUS_OPTS: [string, string, string][] = [
 
 export const RENEWAL_CYCLES: RenewalCycle[] = ['Annual', 'Biennial', 'Triennial'];
 
+// ─── Finances ────────────────────────────────────────────────────────────────
+
+export type TxType = 'income' | 'expense';
+
+export interface LedgerEntry {
+  id: string;
+  date: string;       // ISO date, e.g. "2026-06-15"
+  type: TxType;
+  category: string;
+  source: string;     // income source or vendor name
+  amount: number;
+  note: string;
+}
+
+export interface TaxPayment {
+  id: string;
+  label: string;      // e.g. "Q1 2026"
+  due: string;        // ISO date
+  paid: boolean;
+  paidAmount: number;
+}
+
+export interface FinancesState {
+  currentMonth: string;             // display label, e.g. "June 2026"
+  history: { m: string; rev: number; exp: number }[];  // Jan–May computed
+  ledger: LedgerEntry[];
+  taxRate: number;                  // 0.22 | 0.27 | 0.30
+  taxPayments: TaxPayment[];
+}
+
+export const INCOME_CATEGORIES = ['Platform payout', 'Consulting', 'Clinical', 'Other income'] as const;
+export const EXPENSE_CATEGORIES = ['Insurance', 'Licensing', 'Services', 'Software', 'Education', 'Other'] as const;
+export const TAX_RATE_OPTS = [0.22, 0.27, 0.30] as const;
+
 // ─── Engagements ─────────────────────────────────────────────────────────────
 
 export type EngStatus = 'active' | 'prospect' | 'hold' | 'ended';

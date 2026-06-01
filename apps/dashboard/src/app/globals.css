@@ -666,3 +666,45 @@ select.input {
   font-family: inherit; font-size: 11.5px; color: var(--ink-3); padding: 0; width: 100%;
 }
 .empty-mini { font-size: 12px; color: var(--ink-3); padding: 8px 0; font-style: italic; }
+
+/* ==========================================================================
+   Finances
+   ========================================================================== */
+.amt-in  { color: var(--ok);  font-weight: 600; }
+.amt-out { color: var(--ink); font-weight: 600; }
+.type-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  display: inline-block; margin-right: 7px; vertical-align: middle; flex: none;
+}
+
+/* Tax rate segmented selector */
+.rate-seg { display: inline-flex; gap: 6px; }
+.rate-seg button {
+  font-family: var(--font-mono); font-size: 12px; font-weight: 600;
+  padding: 5px 11px; border-radius: 7px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--ink-2);
+  cursor: pointer;
+}
+.rate-seg button.on {
+  border-color: var(--primary); background: var(--primary-50); color: var(--primary-700);
+}
+
+/* Quarterly tax rows */
+.tax-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 0; border-bottom: 1px solid var(--border);
+}
+.tax-row:last-of-type { border-bottom: none; }
+.tax-q    { font-weight: 600; font-size: 13.5px; width: 74px; flex: none; }
+.tax-meta { font-size: 11.5px; color: var(--ink-3); font-family: var(--font-mono); }
+.tax-amt  { margin-left: auto; text-align: right; }
+.tax-rec  { font-family: var(--font-mono); font-weight: 600; font-size: 13.5px; }
+.tax-sub  { font-size: 11px; color: var(--ink-3); }
+.tax-mark {
+  border: 1px solid var(--border); background: var(--surface); color: var(--ink-2);
+  border-radius: 8px; padding: 6px 11px; font-size: 12px; font-weight: 600;
+  cursor: pointer; white-space: nowrap; flex: none; font-family: inherit;
+}
+.tax-mark:hover { border-color: var(--border-strong); background: var(--surface-2); }
+.tax-mark.paid  { border-color: var(--ok); background: var(--ok-bg); color: var(--ok); }
+.cycle-meter    { font-size: 11px; color: var(--ink-3); margin-top: 7px; }
