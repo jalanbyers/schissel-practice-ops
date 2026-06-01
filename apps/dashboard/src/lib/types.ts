@@ -47,6 +47,38 @@ export const LICENSE_STATUS_OPTS: [string, string, string][] = [
 
 export const RENEWAL_CYCLES: RenewalCycle[] = ['Annual', 'Biennial', 'Triennial'];
 
+// ─── Compliance ──────────────────────────────────────────────────────────────
+
+export type CheckStatus  = 'notstarted' | 'progress' | 'done';
+export type ChecklistGroup = 'Entity' | 'Banking' | 'Insurance' | 'Identifiers' | 'HIPAA' | 'General';
+
+export interface ChecklistTask {
+  id: string;
+  task: string;
+  group: ChecklistGroup;
+  status: CheckStatus;
+  date: string | null;   // ISO due date, or null
+  owner: string;
+  requirements: Requirement[];
+  documents: LicenseDoc[];
+  notes: string;
+}
+
+export const CHK_STATUS_OPTS: [string, string, string][] = [
+  ['notstarted', 'Not started', 'idle'],
+  ['progress',   'In progress', 'warn'],
+  ['done',       'Done',        'ok'],
+];
+
+export const CHK_GROUPS: ChecklistGroup[] = [
+  'Entity', 'Banking', 'Insurance', 'Identifiers', 'HIPAA', 'General',
+];
+
+// Sort: in-progress first, not-started next, done last; then by due date within group
+export const CHK_SORT_ORDER: Record<string, number> = {
+  progress: 0, notstarted: 1, done: 2,
+};
+
 // ─── Finances ────────────────────────────────────────────────────────────────
 
 export type TxType = 'income' | 'expense';
