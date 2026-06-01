@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Type-check every package ──────────────────────────────────────────────
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck packages/db
+        run: pnpm --filter @schissel/db typecheck
+
+      - name: Typecheck packages/api
+        run: pnpm --filter @schissel/api typecheck
+
+      - name: Typecheck apps/dashboard
+        run: pnpm --filter @schissel/dashboard typecheck
+
+  # ── DB tenant-isolation tests (requires Docker for testcontainers) ────────
+  test-db:
+    name: DB tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run cross-tenant denial tests
+        working-directory: packages/db
+        run: pnpm test
+        # testcontainers pulls postgres:16-alpine — Docker is available on ubuntu-latest
+
+  # ── API auth / RBAC tests ─────────────────────────────────────────────────
+  test-api:
+    name: API tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run auth + RBAC tests
+        working-directory: packages/api
+        run: pnpm test

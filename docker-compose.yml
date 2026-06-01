@@ -1,0 +1,51 @@
+version: '3.9'
+
+# Local development stack: Postgres + API.
+# The Next.js dashboard runs separately via: pnpm --filter @schissel/dashboard dev
+#
+# Usage:
+#   cp .env.example .env          # fill in AUTH0_DOMAIN / AUTH0_AUDIENCE
+#   docker compose up -d postgres  # start DB only
+#   pnpm --filter @schissel/db migrate  # run migrations
+#   docker compose up              # start everything
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB:       schissel
+      POSTGRES_USER:     schissel
+      POSTGRES_PASSWORD: schissel
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'schissel']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: packages/api/Dockerfile
+    environment:
+      DATABASE_URL:   postgres://schissel:schissel@postgres:5432/schissel
+      AUTH0_DOMAIN:   ${AUTH0_DOMAIN}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
+      PORT:           3001
+    ports:
+      - '3001:3001'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: rebuild
+          path: packages/api/src
+        - action: rebuild
+          path: packages/db/src
+
+volumes:
+  pgdata:
