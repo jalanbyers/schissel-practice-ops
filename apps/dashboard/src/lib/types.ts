@@ -47,6 +47,42 @@ export const LICENSE_STATUS_OPTS: [string, string, string][] = [
 
 export const RENEWAL_CYCLES: RenewalCycle[] = ['Annual', 'Biennial', 'Triennial'];
 
+// ─── Engagements ─────────────────────────────────────────────────────────────
+
+export type EngStatus = 'active' | 'prospect' | 'hold' | 'ended';
+export type EngModel  = 'Async visits' | 'Scheduled video' | 'On-demand' | 'Panel/retainer' | 'Direct cash' | 'Other';
+
+export interface EngagementRecord {
+  id: string;
+  name: string;
+  model: EngModel;
+  volume: string;
+  rate: string;
+  status: EngStatus;
+  startDate: string;
+  contact: string;
+  portalUrl: string;
+  payTerms: string;
+  requirements: Requirement[];
+  documents: LicenseDoc[];
+  notes: string;
+}
+
+export const ENG_MODELS: EngModel[] = [
+  'Async visits', 'Scheduled video', 'On-demand', 'Panel/retainer', 'Direct cash', 'Other',
+];
+
+export const ENG_STATUS_OPTS: [string, string, string][] = [
+  ['active',   'Active',   'ok'],
+  ['prospect', 'Prospect', 'info'],
+  ['hold',     'On hold',  'warn'],
+  ['ended',    'Ended',    'idle'],
+];
+
+export const ENG_SORT_ORDER: Record<string, number> = {
+  active: 0, prospect: 1, hold: 2, ended: 3,
+};
+
 // ─── Credentialing ───────────────────────────────────────────────────────────
 
 export type PayerType = 'Commercial' | 'Government' | 'Platform' | 'Clearinghouse' | 'Profile' | 'Other';
