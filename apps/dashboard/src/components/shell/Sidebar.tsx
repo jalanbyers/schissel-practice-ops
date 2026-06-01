@@ -9,7 +9,15 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import type { MockState, MockPayer, MockEngagement, MockCheckItem } from '@/lib/mock-data';
 
+interface AuthUser {
+  name: string;
+  email: string;
+  picture?: string;
+  tenantId: string;
+}
+
 interface SidebarProps {
+  user: AuthUser;
   settings: { name: string; entity: string };
   states: MockState[];
   payers: MockPayer[];
@@ -25,7 +33,7 @@ interface NavItem {
   count?: number;
 }
 
-export function Sidebar({ settings, states, payers, engagements, checklist }: SidebarProps) {
+export function Sidebar({ user, settings, states, payers, engagements, checklist }: SidebarProps) {
   const pathname = usePathname();
 
   const navItems: NavItem[] = [
@@ -89,15 +97,32 @@ export function Sidebar({ settings, states, payers, engagements, checklist }: Si
         </Link>
       </nav>
 
-      {/* Footer profile chip */}
+      {/* Footer profile chip — shows the authenticated Auth0 user */}
       <div className="sidebar-foot">
         <div className="profile">
-          <div className="avatar">DS</div>
+          {user.picture ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={user.picture}
+              alt={user.name}
+              style={{ width: 30, height: 30, borderRadius: '50%', objectFit: 'cover', flex: 'none' }}
+            />
+          ) : (
+            <div className="avatar">
+              {user.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+            </div>
+          )}
           <div className="pinfo">
-            <div style={{ fontSize: 13, fontWeight: 600 }}>Dr. Schissel</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-3)' }}>Operations</div>
+            <div style={{ fontSize: 13, fontWeight: 600 }}>{user.name}</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-3)' }}>{user.email}</div>
           </div>
         </div>
+        <a
+          href="/api/auth/logout"
+          style={{ fontSize: 11, color: 'var(--ink-3)', padding: '4px 8px', display: 'block', textDecoration: 'none' }}
+        >
+          Sign out
+        </a>
       </div>
     </aside>
   );

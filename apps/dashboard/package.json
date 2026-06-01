@@ -9,8 +9,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@auth0/nextjs-auth0": "^4.0.0",
     "@schissel/db": "workspace:*",
     "@tanstack/react-query": "^5.0.0",
+    "jose": "^5.0.0",
     "lucide-react": "^0.400.0",
     "next": "^15.0.0",
     "react": "^18.3.0",
