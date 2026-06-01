@@ -1,0 +1,25 @@
+{
+  "name": "@schissel/db",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "generate": "drizzle-kit generate",
+    "migrate": "drizzle-kit migrate"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.33.0",
+    "pg": "^8.12.0"
+  },
+  "devDependencies": {
+    "@testcontainers/postgresql": "^10.9.0",
+    "@types/pg": "^8.11.0",
+    "drizzle-kit": "^0.24.0",
+    "vitest": "^2.0.0"
+  }
+}
