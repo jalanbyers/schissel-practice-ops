@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { TaskDrawer } from './TaskDrawer';
 import { daysUntil, fmtDate } from '@/lib/date-helpers';
 import { CHK_STATUS_OPTS, CHK_SORT_ORDER } from '@/lib/types';
+import { emitAudit } from '@/lib/audit';
 import type { ChecklistTask } from '@/lib/types';
 
 interface ComplianceSectionProps {
@@ -54,6 +55,7 @@ export function ComplianceSection({ initialTasks }: ComplianceSectionProps) {
   const closeDrawer = () => setDrawer({ kind: 'closed' });
 
   const saveTask = (task: ChecklistTask) => {
+    const isCreating = !tasks.some(c => c.id === task.id);
     setTasks(prev => {
       const i = prev.findIndex(c => c.id === task.id);
       if (i === -1) return [...prev, task];
@@ -61,10 +63,25 @@ export function ComplianceSection({ initialTasks }: ComplianceSectionProps) {
       next[i] = task;
       return next;
     });
+    emitAudit({
+      action: isCreating ? 'create' : 'update',
+      entity: 'task',
+      entityId: task.id,
+      label: `Task "${task.task}" ${isCreating ? 'added' : 'saved'}`,
+      tenantId: 'demo',
+    });
     setDrawer({ kind: 'edit', id: task.id });
   };
 
   const deleteTask = (id: string) => {
+    const task = tasks.find(c => c.id === id);
+    emitAudit({
+      action: 'delete',
+      entity: 'task',
+      entityId: id,
+      label: `Task "${task?.task ?? id}" deleted`,
+      tenantId: 'demo',
+    });
     setTasks(prev => prev.filter(c => c.id !== id));
     closeDrawer();
   };
@@ -73,10 +90,19 @@ export function ComplianceSection({ initialTasks }: ComplianceSectionProps) {
   // e.stopPropagation() keeps the row click from also firing.
   const quickToggle = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    const task = tasks.find(c => c.id === id);
+    const nextStatus = task?.status === 'done' ? 'notstarted' : 'done';
+    emitAudit({
+      action: 'toggle',
+      entity: 'task',
+      entityId: id,
+      label: `Task "${task?.task ?? id}" marked ${nextStatus === 'done' ? 'done' : 'not started'}`,
+      tenantId: 'demo',
+    });
     setTasks(prev =>
       prev.map(c =>
         c.id === id
-          ? { ...c, status: c.status === 'done' ? 'notstarted' : 'done' }
+          ? { ...c, status: nextStatus }
           : c,
       ),
     );

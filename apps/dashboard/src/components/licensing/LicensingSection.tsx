@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { TileMap } from '@/components/overview/TileMap';
 import { LicenseDrawer } from './LicenseDrawer';
 import { daysUntil, fmtDays, fmtDate } from '@/lib/date-helpers';
+import { emitAudit } from '@/lib/audit';
 import { LICENSE_STATUS_OPTS } from '@/lib/types';
 import type { LicenseRecord } from '@/lib/types';
 import type { MockState } from '@/lib/mock-data';
@@ -59,6 +60,7 @@ export function LicensingSection({ initialLicenses }: LicensingSectionProps) {
   const closeDrawer = () => setDrawer({ kind: 'closed' });
 
   const saveLicense = (record: LicenseRecord) => {
+    const isCreating = !licenses.some(s => s.code === record.code);
     setLicenses(prev => {
       const i = prev.findIndex(s => s.code === record.code);
       if (i === -1) return [...prev, record];
@@ -66,11 +68,25 @@ export function LicensingSection({ initialLicenses }: LicensingSectionProps) {
       next[i] = record;
       return next;
     });
-    // Stay on the edited record after save
+    emitAudit({
+      action: isCreating ? 'create' : 'update',
+      entity: 'license',
+      entityId: record.code,
+      label: `License ${record.code} (${record.name}) ${isCreating ? 'added' : 'saved'}`,
+      tenantId: 'demo',
+    });
     setDrawer({ kind: 'edit', code: record.code });
   };
 
   const deleteLicense = (code: string) => {
+    const record = licenses.find(s => s.code === code);
+    emitAudit({
+      action: 'delete',
+      entity: 'license',
+      entityId: code,
+      label: `License ${code}${record ? ` (${record.name})` : ''} deleted`,
+      tenantId: 'demo',
+    });
     setLicenses(prev => prev.filter(s => s.code !== code));
     closeDrawer();
   };

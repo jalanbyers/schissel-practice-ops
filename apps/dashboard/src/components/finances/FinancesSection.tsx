@@ -13,6 +13,7 @@ import {
 } from '@/lib/finance-helpers';
 import { fmtDate } from '@/lib/date-helpers';
 import { TAX_RATE_OPTS } from '@/lib/types';
+import { emitAudit } from '@/lib/audit';
 import type { FinancesState, LedgerEntry, TxType } from '@/lib/types';
 
 interface FinancesSectionProps {
@@ -64,6 +65,7 @@ export function FinancesSection({ initialFinances }: FinancesSectionProps) {
 
   // ── Mutations ───────────────────────────────────────────────────────────────
   const saveTx = (tx: LedgerEntry) => {
+    const isCreating = !fin.ledger.some(t => t.id === tx.id);
     setFin(prev => {
       const i = prev.ledger.findIndex(t => t.id === tx.id);
       const ledger = i === -1
@@ -71,10 +73,25 @@ export function FinancesSection({ initialFinances }: FinancesSectionProps) {
         : prev.ledger.map(t => t.id === tx.id ? tx : t);
       return { ...prev, ledger };
     });
+    emitAudit({
+      action: isCreating ? 'create' : 'update',
+      entity: 'ledger',
+      entityId: tx.id,
+      label: `${tx.type === 'income' ? 'Income' : 'Expense'} from "${tx.source}" ${isCreating ? 'logged' : 'updated'} (${fmtUSD(tx.amount)})`,
+      tenantId: 'demo',
+    });
     setDrawer({ kind: 'closed' });
   };
 
   const deleteTx = (id: string) => {
+    const tx = fin.ledger.find(t => t.id === id);
+    emitAudit({
+      action: 'delete',
+      entity: 'ledger',
+      entityId: id,
+      label: `Ledger entry "${tx?.source ?? id}" deleted`,
+      tenantId: 'demo',
+    });
     setFin(prev => ({ ...prev, ledger: prev.ledger.filter(t => t.id !== id) }));
     setDrawer({ kind: 'closed' });
   };
@@ -82,7 +99,15 @@ export function FinancesSection({ initialFinances }: FinancesSectionProps) {
   const setRate = (rate: number) =>
     setFin(prev => ({ ...prev, taxRate: rate }));
 
-  const toggleQuarter = (qid: string, recommended: number) =>
+  const toggleQuarter = (qid: string, recommended: number) => {
+    const q = fin.taxPayments.find(p => p.id === qid);
+    emitAudit({
+      action: 'toggle',
+      entity: 'ledger',
+      entityId: qid,
+      label: `${q?.label ?? 'Quarter'} marked ${q?.paid ? 'unpaid' : 'paid'}`,
+      tenantId: 'demo',
+    });
     setFin(prev => ({
       ...prev,
       taxPayments: prev.taxPayments.map(q =>
@@ -91,6 +116,7 @@ export function FinancesSection({ initialFinances }: FinancesSectionProps) {
           : q,
       ),
     }));
+  };
 
   const editingTx =
     drawer.kind === 'edit'

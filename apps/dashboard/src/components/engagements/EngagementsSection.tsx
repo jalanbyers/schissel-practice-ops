@@ -8,6 +8,7 @@ import { StatusPill, ENG_STATUS } from '@/components/ui/StatusPill';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { EngagementDrawer } from './EngagementDrawer';
 import { ENG_STATUS_OPTS, ENG_SORT_ORDER } from '@/lib/types';
+import { emitAudit } from '@/lib/audit';
 import type { EngagementRecord } from '@/lib/types';
 
 interface EngagementsSectionProps {
@@ -41,6 +42,7 @@ export function EngagementsSection({ initialEngagements }: EngagementsSectionPro
   const closeDrawer = () => setDrawer({ kind: 'closed' });
 
   const saveEngagement = (record: EngagementRecord) => {
+    const isCreating = !engagements.some(e => e.id === record.id);
     setEngagements(prev => {
       const i = prev.findIndex(e => e.id === record.id);
       if (i === -1) return [...prev, record];
@@ -48,10 +50,25 @@ export function EngagementsSection({ initialEngagements }: EngagementsSectionPro
       next[i] = record;
       return next;
     });
+    emitAudit({
+      action: isCreating ? 'create' : 'update',
+      entity: 'engagement',
+      entityId: record.id,
+      label: `Engagement "${record.name}" ${isCreating ? 'added' : 'saved'}`,
+      tenantId: 'demo',
+    });
     setDrawer({ kind: 'edit', id: record.id });
   };
 
   const deleteEngagement = (id: string) => {
+    const record = engagements.find(e => e.id === id);
+    emitAudit({
+      action: 'delete',
+      entity: 'engagement',
+      entityId: id,
+      label: `Engagement "${record?.name ?? id}" deleted`,
+      tenantId: 'demo',
+    });
     setEngagements(prev => prev.filter(e => e.id !== id));
     closeDrawer();
   };

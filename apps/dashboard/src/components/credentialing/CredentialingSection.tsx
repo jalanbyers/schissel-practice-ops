@@ -8,6 +8,7 @@ import { StatusPill, PAYER_STATUS } from '@/components/ui/StatusPill';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PayerDrawer } from './PayerDrawer';
 import { fmtDate } from '@/lib/date-helpers';
+import { emitAudit } from '@/lib/audit';
 import { PAYER_STATUS_OPTS, PAYER_SORT_ORDER } from '@/lib/types';
 import type { PayerRecord } from '@/lib/types';
 
@@ -42,6 +43,7 @@ export function CredentialingSection({ initialPayers }: CredentialingSectionProp
   const closeDrawer = () => setDrawer({ kind: 'closed' });
 
   const savePayer = (record: PayerRecord) => {
+    const isCreating = !payers.some(p => p.id === record.id);
     setPayers(prev => {
       const i = prev.findIndex(p => p.id === record.id);
       if (i === -1) return [...prev, record];
@@ -49,10 +51,25 @@ export function CredentialingSection({ initialPayers }: CredentialingSectionProp
       next[i] = record;
       return next;
     });
+    emitAudit({
+      action: isCreating ? 'create' : 'update',
+      entity: 'payer',
+      entityId: record.id,
+      label: `Payer "${record.name}" ${isCreating ? 'added' : 'saved'}`,
+      tenantId: 'demo',
+    });
     setDrawer({ kind: 'edit', id: record.id });
   };
 
   const deletePayer = (id: string) => {
+    const record = payers.find(p => p.id === id);
+    emitAudit({
+      action: 'delete',
+      entity: 'payer',
+      entityId: id,
+      label: `Payer "${record?.name ?? id}" deleted`,
+      tenantId: 'demo',
+    });
     setPayers(prev => prev.filter(p => p.id !== id));
     closeDrawer();
   };
