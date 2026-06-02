@@ -1,7 +1,7 @@
 # Single-stage build — tsx runs TypeScript directly, no compilation step.
 # Simpler and more reliable than multi-stage tsc for a monorepo.
 FROM node:22-alpine
-RUN npm install -g pnpm@9
+RUN npm install -g pnpm@9 tsx
 WORKDIR /app
 
 # Install dependencies (--ignore-scripts avoids native build failures
@@ -24,4 +24,4 @@ HEALTHCHECK --interval=15s --timeout=5s --start-period=10s \
 
 # tsx transpiles TypeScript on startup — no dist/ needed.
 # tsx is a prod dependency so it's present in node_modules after install.
-CMD ["./node_modules/.bin/tsx", "packages/api/src/index.ts"]
+CMD ["tsx", "packages/api/src/index.ts"]
