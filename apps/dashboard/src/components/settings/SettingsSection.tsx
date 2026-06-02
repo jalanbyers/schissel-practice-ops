@@ -272,7 +272,7 @@ export function SettingsSection() {
               ['licenseRenewals', 'License renewals',   'Flag state licenses before they expire'],
               ['recredentialing', 'Re-credentialing',   'Flag payer revalidation dates'],
               ['complianceDue',   'Compliance tasks',   'Flag tasks as their due date nears'],
-              ['weeklyDigest',    'Weekly digest',      'A Monday summary of what's due'],
+              ['weeklyDigest',    'Weekly digest',      "A Monday summary of what's due"],
             ] as [keyof NotifPrefs, string, string][]).map(([key, label, help]) => (
               <div key={key} className="set-row">
                 <div className="set-main">
