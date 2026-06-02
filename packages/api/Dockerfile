@@ -22,5 +22,6 @@ EXPOSE 3001
 HEALTHCHECK --interval=15s --timeout=5s --start-period=10s \
   CMD wget -qO- http://localhost:3001/healthz || exit 1
 
-# tsx transpiles TypeScript on startup — no dist/ needed
-CMD ["node_modules/.bin/tsx", "packages/api/src/index.ts"]
+# tsx transpiles TypeScript on startup — no dist/ needed.
+# tsx is a prod dependency so it's present in node_modules after install.
+CMD ["./node_modules/.bin/tsx", "packages/api/src/index.ts"]
