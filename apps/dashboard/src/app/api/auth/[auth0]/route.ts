@@ -1,15 +1,15 @@
-import { NextRequest } from 'next/server';
-import { auth0 } from '@/lib/auth';
-
 /**
- * Auth0 SDK v4 route handler.
- * auth0.handler() routes internally to login / logout / callback / profile
- * based on the URL path segment after /api/auth/.
+ * Auth routes are handled by src/middleware.ts via auth0.middleware().
+ * This file exists only to satisfy Next.js routing — requests to
+ * /api/auth/* are intercepted by the middleware before reaching here.
+ *
+ * In @auth0/nextjs-auth0 v4, auth0.middleware() processes login, callback,
+ * logout, and profile routes directly in the middleware layer.
  */
-export async function GET(request: NextRequest) {
-  return auth0.handler(request);
+export async function GET() {
+  return new Response('Auth handled by middleware', { status: 200 });
 }
 
-export async function POST(request: NextRequest) {
-  return auth0.handler(request);
+export async function POST() {
+  return new Response('Auth handled by middleware', { status: 200 });
 }
