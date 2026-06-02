@@ -61,9 +61,12 @@ const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (fastify, opts) 
 
   // Decorate request so TypeScript knows these fields exist on every handler.
   // Handlers must never be reached without these being set (enforced below).
-  fastify.decorateRequest('tenantId',   '');
-  fastify.decorateRequest('userId',     '');
-  fastify.decorateRequest('userRoles',  [] as string[]);
+  fastify.decorateRequest('tenantId',    '');
+  fastify.decorateRequest('userId',      '');
+  // Arrays are reference types — Fastify 5 requires getter/setter interface
+  fastify.decorateRequest('userRoles', {
+    getter() { return [] as string[]; },
+  });
   fastify.decorateRequest('mfaVerified', false);
 
   fastify.addHook('onRequest', async (request, reply) => {
