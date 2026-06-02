@@ -1,10 +1,15 @@
+import { NextRequest } from 'next/server';
 import { auth0 } from '@/lib/auth';
 
 /**
- * Auth0 SDK route handler — catches all /api/auth/* paths:
- *   GET /api/auth/login    — initiates Auth0 Universal Login
- *   GET /api/auth/logout   — clears session and redirects
- *   GET /api/auth/callback — exchanges the code for tokens
- *   GET /api/auth/profile  — returns the current user's profile
+ * Auth0 SDK v4 route handler.
+ * auth0.handler() routes internally to login / logout / callback / profile
+ * based on the URL path segment after /api/auth/.
  */
-export const GET = auth0.handleAuth();
+export async function GET(request: NextRequest) {
+  return auth0.handler(request);
+}
+
+export async function POST(request: NextRequest) {
+  return auth0.handler(request);
+}
