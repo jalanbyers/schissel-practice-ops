@@ -8,6 +8,7 @@ import { AuditFeed } from '@/components/audit/AuditFeed';
 import { US_GRID, US_NAMES } from '@/lib/us-grid';
 import { MOCK_SETTINGS } from '@/lib/mock-data';
 import { emitAudit } from '@/lib/audit';
+import { usePracticeProfile } from '@/components/providers/SettingsContext';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -68,6 +69,10 @@ const STATE_CODES = [...US_GRID.map(([code]) => code)].sort();
 // Section
 // ---------------------------------------------------------------------------
 export function SettingsSection() {
+  // updateProfile propagates name/entity changes to the sidebar brand block
+  // via SettingsContext — no page reload needed.
+  const { updateProfile } = usePracticeProfile();
+
   const [profile, setProfile] = useState<ProfileDraft>(DEFAULT_PROFILE);
   const [draft, setDraft]     = useState<ProfileDraft>(DEFAULT_PROFILE);
   const [saved, setSaved]     = useState(false);
@@ -85,6 +90,8 @@ export function SettingsSection() {
 
   const saveProfile = () => {
     setProfile(draft);
+    // Propagate to sidebar immediately — no page reload.
+    updateProfile({ name: draft.name, entity: draft.entity });
     setSaved(true);
     emitAudit({
       action: 'update',
