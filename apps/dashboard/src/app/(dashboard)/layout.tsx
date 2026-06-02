@@ -4,25 +4,8 @@ import { extractTenantId } from '@/lib/tenant';
 import { Sidebar } from '@/components/shell/Sidebar';
 import { TopBar } from '@/components/shell/TopBar';
 import { SettingsProvider } from '@/components/providers/SettingsContext';
-import {
-  MOCK_SETTINGS, MOCK_STATES, MOCK_PAYERS,
-  MOCK_ENGAGEMENTS, MOCK_CHECKLIST,
-} from '@/lib/mock-data';
+import { MOCK_SETTINGS } from '@/lib/mock-data';
 
-/**
- * Dashboard shell layout — server component.
- *
- * Wraps the entire (dashboard) tree with <SettingsProvider> so that
- * SettingsSection can call updateProfile() and the Sidebar brand block
- * re-renders immediately without a page reload.
- *
- * Data flow:
- *   SettingsProvider (client boundary, holds PracticeProfile in state)
- *     ↓  usePracticeProfile()
- *   Sidebar → brand block reads profile.name / profile.entity live
- *     ↓  updateProfile()
- *   SettingsSection → calls updateProfile() on Save, also PATCHes /v1/settings
- */
 export default async function DashboardLayout({
   children,
 }: {
@@ -46,13 +29,8 @@ export default async function DashboardLayout({
       initialProfile={{ name: MOCK_SETTINGS.name, entity: MOCK_SETTINGS.entity }}
     >
       <div className="app">
-        <Sidebar
-          user={user}
-          states={MOCK_STATES}
-          payers={MOCK_PAYERS}
-          engagements={MOCK_ENGAGEMENTS}
-          checklist={MOCK_CHECKLIST}
-        />
+        {/* Sidebar fetches its own counts via useQuery hooks */}
+        <Sidebar user={user} />
         <div className="main">
           <TopBar title="Overview" date={MOCK_SETTINGS.today} />
           <div className="scroll">{children}</div>

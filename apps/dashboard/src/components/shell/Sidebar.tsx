@@ -7,8 +7,11 @@ import {
   Briefcase, BarChart2, ShieldAlert, Settings2,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { MockState, MockPayer, MockEngagement, MockCheckItem } from '@/lib/mock-data';
 import { usePracticeProfile } from '@/components/providers/SettingsContext';
+import { useLicenses } from '@/hooks/use-licenses';
+import { usePayers } from '@/hooks/use-payers';
+import { useEngagements } from '@/hooks/use-engagements';
+import { useChecklist } from '@/hooks/use-checklist';
 
 interface AuthUser {
   name: string;
@@ -19,11 +22,6 @@ interface AuthUser {
 
 interface SidebarProps {
   user: AuthUser;
-  // settings prop removed — brand block reads from SettingsContext instead
-  states: MockState[];
-  payers: MockPayer[];
-  engagements: MockEngagement[];
-  checklist: MockCheckItem[];
 }
 
 interface NavItem {
@@ -34,32 +32,37 @@ interface NavItem {
   count?: number;
 }
 
-export function Sidebar({ user, states, payers, engagements, checklist }: SidebarProps) {
+export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
-
-  // Live practice name/entity — updates immediately when Settings saves.
   const { profile } = usePracticeProfile();
 
+  // Fetch live counts from the same query cache as the workspace pages.
+  // These are background fetches — they don't block rendering.
+  const { data: licenses    = [] } = useLicenses();
+  const { data: payers      = [] } = usePayers();
+  const { data: engagements = [] } = useEngagements();
+  const { data: checklist   = [] } = useChecklist();
+
   const navItems: NavItem[] = [
-    { id: 'overview',      label: 'Overview',       href: '/overview',      Icon: LayoutDashboard },
-    { id: 'licensing',     label: 'Licensing',      href: '/licensing',     Icon: ShieldCheck,
-      count: states.length },
-    { id: 'credentialing', label: 'Credentialing',  href: '/credentialing', Icon: ClipboardCheck,
-      count: payers.filter(p => p.status !== 'approved').length },
-    { id: 'engagements',   label: 'Engagements',    href: '/engagements',   Icon: Briefcase,
-      count: engagements.filter(e => e.status === 'active').length },
-    { id: 'finances',      label: 'Finances',       href: '/finances',      Icon: BarChart2 },
+    { id: 'overview',      label: 'Overview',      href: '/overview',      Icon: LayoutDashboard },
+    { id: 'licensing',     label: 'Licensing',     href: '/licensing',     Icon: ShieldCheck,
+      count: licenses.length },
+    { id: 'credentialing', label: 'Credentialing', href: '/credentialing', Icon: ClipboardCheck,
+      count: payers.filter((p: any) => p.status !== 'approved').length },
+    { id: 'engagements',   label: 'Engagements',   href: '/engagements',   Icon: Briefcase,
+      count: engagements.filter((e: any) => e.status === 'active').length },
+    { id: 'finances',      label: 'Finances',      href: '/finances',      Icon: BarChart2 },
     { id: 'compliance',    label: 'Compliance',     href: '/compliance',    Icon: ShieldAlert,
-      count: checklist.filter(c => c.status !== 'done').length },
+      count: checklist.filter((c: any) => c.status !== 'done').length },
   ];
 
-  const initial = profile.name.charAt(0).toUpperCase();
+  const initial  = profile.name.charAt(0).toUpperCase();
   const isActive = (href: string) =>
     pathname === href || (href !== '/overview' && pathname.startsWith(href));
 
   return (
     <aside className="sidebar">
-      {/* Brand block — re-renders when profile.name/entity changes */}
+      {/* Brand block */}
       <div className="brand">
         <div className="brand-mark">{initial}</div>
         <div>
@@ -75,7 +78,9 @@ export function Sidebar({ user, states, payers, engagements, checklist }: Sideba
           <Link key={id} href={href} className={`nav-item${isActive(href) ? ' active' : ''}`}>
             <Icon size={17} />
             <span className="nav-lbl">{label}</span>
-            {count !== undefined && <span className="count">{count}</span>}
+            {count !== undefined && count > 0 && (
+              <span className="count">{count}</span>
+            )}
           </Link>
         ))}
 
@@ -86,7 +91,7 @@ export function Sidebar({ user, states, payers, engagements, checklist }: Sideba
         </Link>
       </nav>
 
-      {/* Profile chip — authenticated Auth0 user */}
+      {/* Profile chip */}
       <div className="sidebar-foot">
         <div className="profile">
           {user.picture ? (
