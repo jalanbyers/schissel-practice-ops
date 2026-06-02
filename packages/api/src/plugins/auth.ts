@@ -56,16 +56,18 @@ export interface AuthPluginOptions {
   publicPaths?: string[];
 }
 
+// WeakMap gives each request its own roles array without sharing references.
+// Fastify 5 requires getter+setter for reference types; the WeakMap is the store.
+const _rolesStore = new WeakMap<object, string[]>();
+
 const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (fastify, opts) => {
   const { verifier, publicPaths = ['/healthz'] } = opts;
 
-  // Decorate request so TypeScript knows these fields exist on every handler.
-  // Handlers must never be reached without these being set (enforced below).
   fastify.decorateRequest('tenantId',    '');
   fastify.decorateRequest('userId',      '');
-  // Arrays are reference types — Fastify 5 requires getter/setter interface
   fastify.decorateRequest('userRoles', {
-    getter() { return [] as string[]; },
+    getter(this: object) { return _rolesStore.get(this) ?? []; },
+    setter(this: object, val: string[]) { _rolesStore.set(this, val); },
   });
   fastify.decorateRequest('mfaVerified', false);
 
