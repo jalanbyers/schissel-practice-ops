@@ -10,7 +10,6 @@ RUN pnpm install --frozen-lockfile
 
 # ── Stage 2: build ────────────────────────────────────────────────────────────
 FROM node:22-alpine AS builder
-RUN npm install -g pnpm@9
 WORKDIR /app
 
 COPY --from=deps /app/node_modules              ./node_modules
@@ -18,21 +17,19 @@ COPY --from=deps /app/packages/db/node_modules  ./packages/db/node_modules
 COPY --from=deps /app/packages/api/node_modules ./packages/api/node_modules
 
 COPY tsconfig.base.json ./
-COPY packages/db/src          ./packages/db/src
+COPY packages/db/src           ./packages/db/src
 COPY packages/db/tsconfig.json ./packages/db/
 COPY packages/api/src          ./packages/api/src
 COPY packages/api/tsconfig.json ./packages/api/
 
-# Use the package's own build script (tsc) via pnpm run, not exec
-RUN pnpm --filter @schissel/db  run build || \
-    (cd packages/db  && ./node_modules/.bin/tsc)
-RUN pnpm --filter @schissel/api run build || \
-    (cd packages/api && ./node_modules/.bin/tsc)
+# Compile db first (api depends on it)
+RUN node_modules/.bin/tsc -p packages/db/tsconfig.json
+RUN ls -la packages/db/dist/
 
-# Confirm dist dirs were created
-RUN ls packages/db/dist && ls packages/api/dist
+RUN node_modules/.bin/tsc -p packages/api/tsconfig.json
+RUN ls -la packages/api/dist/
 
-# ── Stage 3: minimal runtime image ────────────────────────────────────────────
+# ── Stage 3: runtime ──────────────────────────────────────────────────────────
 FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
