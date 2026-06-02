@@ -28,14 +28,10 @@ async function proxy(request: NextRequest, method: string, ctx: Ctx) {
   const isBodyMethod = method === 'POST' || method === 'PATCH' || method === 'PUT';
   const body = isBodyMethod ? await request.text() : undefined;
 
-  const res = await fetch(url, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body,
-  });
+  const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+  if (isBodyMethod) headers['Content-Type'] = 'application/json';
+
+  const res = await fetch(url, { method, headers, body });
 
   // Preserve status; parse JSON or return empty on 204
   if (res.status === 204) return new NextResponse(null, { status: 204 });
