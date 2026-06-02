@@ -14,7 +14,9 @@ import { auth0 } from '@/lib/auth';
  * NOTE: /api/auth/* must NOT be excluded from the matcher — the middleware
  * needs to intercept those requests to handle them.
  */
-export default auth0.middleware();
+export default function middleware(request: Request) {
+  return auth0.middleware(request);
+}
 
 export const config = {
   matcher: [
