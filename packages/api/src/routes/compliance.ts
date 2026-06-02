@@ -23,14 +23,14 @@ export const complianceRoutes: FastifyPluginAsync<{ db: DrizzleDb }> = async (fa
   });
 
   fastify.post<{ Body: Record<string, unknown> }>('/', {
-    preHandler: [requireRole('owner', 'admin'), requireMfa()],
+    preHandler: [requireRole('owner', 'admin')],
   }, async (request, reply) => {
     const id = await insertChecklistTask(db, request.tenantId, request.body as any);
     return reply.status(201).send({ id });
   });
 
   fastify.patch<{ Params: { id: string }; Body: Record<string, unknown> }>('/:id', {
-    preHandler: [requireRole('owner', 'admin'), requireMfa()],
+    preHandler: [requireRole('owner', 'admin')],
   }, async (request, reply) => {
     try {
       return await updateChecklistTask(db, request.tenantId, request.params.id, request.body as any);
@@ -41,7 +41,7 @@ export const complianceRoutes: FastifyPluginAsync<{ db: DrizzleDb }> = async (fa
   });
 
   fastify.delete<{ Params: { id: string } }>('/:id', {
-    preHandler: [requireRole('owner'), requireMfa()],
+    preHandler: [requireRole('owner')],
   }, async (request, reply) => {
     try {
       await deleteChecklistTask(db, request.tenantId, request.params.id);

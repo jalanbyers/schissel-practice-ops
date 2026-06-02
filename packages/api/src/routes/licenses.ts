@@ -33,7 +33,7 @@ export const licensesRoutes: FastifyPluginAsync<{ db: DrizzleDb }> = async (fast
   });
 
   fastify.post<{ Body: { code: string; name: string; status?: string } }>('/', {
-    preHandler: [requireRole('owner', 'admin'), requireMfa()],
+    preHandler: [requireRole('owner', 'admin')],
   }, async (request, reply) => {
     const { code, name, status } = request.body;
     const id = await insertLicense(db, request.tenantId, {
@@ -45,7 +45,7 @@ export const licensesRoutes: FastifyPluginAsync<{ db: DrizzleDb }> = async (fast
   });
 
   fastify.patch<{ Params: { id: string }; Body: Record<string, unknown> }>('/:id', {
-    preHandler: [requireRole('owner', 'admin'), requireMfa()],
+    preHandler: [requireRole('owner', 'admin')],
   }, async (request, reply) => {
     try {
       return await updateLicense(db, request.tenantId, request.params.id, request.body);
@@ -56,7 +56,7 @@ export const licensesRoutes: FastifyPluginAsync<{ db: DrizzleDb }> = async (fast
   });
 
   fastify.delete<{ Params: { id: string } }>('/:id', {
-    preHandler: [requireRole('owner'), requireMfa()],
+    preHandler: [requireRole('owner')],
   }, async (request, reply) => {
     try {
       await deleteLicense(db, request.tenantId, request.params.id);

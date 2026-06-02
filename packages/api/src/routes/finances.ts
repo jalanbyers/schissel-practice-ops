@@ -57,14 +57,14 @@ export const financesRoutes: FastifyPluginAsync<{ db: DrizzleDb }> = async (fast
 
   // Ledger CRUD
   fastify.post<{ Body: Record<string, unknown> }>('/ledger', {
-    preHandler: [requireRole('owner', 'admin'), requireMfa()],
+    preHandler: [requireRole('owner', 'admin')],
   }, async (request, reply) => {
     const id = await insertLedgerEntry(db, request.tenantId, request.body as any);
     return reply.status(201).send({ id });
   });
 
   fastify.delete<{ Params: { id: string } }>('/ledger/:id', {
-    preHandler: [requireRole('owner'), requireMfa()],
+    preHandler: [requireRole('owner')],
   }, async (request, reply) => {
     try {
       await deleteLedgerEntry(db, request.tenantId, request.params.id);
@@ -77,14 +77,14 @@ export const financesRoutes: FastifyPluginAsync<{ db: DrizzleDb }> = async (fast
 
   // Tax payments
   fastify.post<{ Body: Record<string, unknown> }>('/tax-payments', {
-    preHandler: [requireRole('owner', 'admin'), requireMfa()],
+    preHandler: [requireRole('owner', 'admin')],
   }, async (request, reply) => {
     const id = await upsertTaxPayment(db, request.tenantId, request.body as any);
     return reply.status(201).send({ id });
   });
 
   fastify.patch<{ Params: { id: string }; Body: { paidAmount: string } }>('/tax-payments/:id/paid', {
-    preHandler: [requireRole('owner', 'admin'), requireMfa()],
+    preHandler: [requireRole('owner', 'admin')],
   }, async (request, reply) => {
     try {
       await markTaxPaymentPaid(db, request.tenantId, request.params.id, request.body.paidAmount);
@@ -97,7 +97,7 @@ export const financesRoutes: FastifyPluginAsync<{ db: DrizzleDb }> = async (fast
 
   // Update tax rate (stored in settings)
   fastify.patch<{ Body: { taxRate: number } }>('/tax-rate', {
-    preHandler: [requireRole('owner', 'admin'), requireMfa()],
+    preHandler: [requireRole('owner', 'admin')],
   }, async (request) => {
     const { taxRate } = request.body;
     return getSettings(db, request.tenantId); // re-fetch after update via settings route
