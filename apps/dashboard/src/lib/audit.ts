@@ -76,7 +76,7 @@ export function useAuditLog(): AuditEvent[] {
   useEffect(() => {
     const fn = () => force(x => x + 1);
     subscribers.add(fn);
-    return () => subscribers.delete(fn);
+    return () => { subscribers.delete(fn); };
   }, []);
   return events;
 }
