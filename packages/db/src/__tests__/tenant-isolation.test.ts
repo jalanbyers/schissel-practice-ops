@@ -11,10 +11,8 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import { createDb, type DrizzleDb } from '../client.js';
 import { NotFoundError } from '../errors.js';
-import { setupSchema } from './helpers/setup-schema.js';
+import { createPgliteDb } from './helpers/create-pglite-db.js';
 
 import {
   getLicensesByTenant,
@@ -54,8 +52,9 @@ import {
 const TENANT_A = 'tenant-aaaaaaaa';
 const TENANT_B = 'tenant-bbbbbbbb';
 
-let container: StartedPostgreSqlContainer;
-let db: DrizzleDb;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let db: any;
+let stopDb: () => Promise<void>;
 
 // IDs of records seeded under tenant B — tenant A will attempt to access them.
 let licenseId: string;
@@ -65,9 +64,9 @@ let taskId: string;
 let ledgerEntryId: string;
 
 beforeAll(async () => {
-  container = await new PostgreSqlContainer('postgres:16-alpine').start();
-  db = createDb(container.getConnectionUri());
-  await setupSchema(db);
+  // Use PGlite (in-process Postgres 16) — no Docker required.
+  // CI uses testcontainers/postgresql via the separate ci-db job in workflow.
+  ({ db, stop: stopDb } = await createPgliteDb());
 
   // Seed records belonging exclusively to tenant B.
   licenseId = await insertLicense(db, TENANT_B, { code: 'CA', name: 'California', status: 'active' });
@@ -79,7 +78,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await container.stop();
+  await stopDb();
 });
 
 // ---------------------------------------------------------------------------

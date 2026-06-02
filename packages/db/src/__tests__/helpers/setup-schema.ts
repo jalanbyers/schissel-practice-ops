@@ -7,8 +7,14 @@ import type { DrizzleDb } from '../../client.js';
  * migration files — the schema is the source of truth.
  */
 export async function setupSchema(db: DrizzleDb): Promise<void> {
-  // uuid generation requires pgcrypto on Postgres <15 (gen_random_uuid is built-in on 15+)
-  await db.execute(sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`);
+  // pgcrypto is only needed on Postgres < 13. PG13+ and PGlite ship
+  // gen_random_uuid() as a built-in, so this is a no-op but kept for
+  // environments that still need it.
+  try {
+    await db.execute(sql`CREATE EXTENSION IF NOT EXISTS pgcrypto`);
+  } catch {
+    // Not available in PGlite — gen_random_uuid() is built-in; continue.
+  }
 
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS licenses (

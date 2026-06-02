@@ -1,3 +1,12 @@
 packages:
   - 'packages/*'
   - 'apps/*'
+
+# Native build scripts required by testcontainers (ssh2, protobufjs)
+# and vitest/esbuild. cpu-features and sharp are optional; false = skip.
+allowBuilds:
+  esbuild: true
+  protobufjs: true
+  ssh2: true
+  cpu-features: false
+  sharp: false
