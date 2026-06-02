@@ -50,7 +50,7 @@ export function EngagementsSection() {
       tenantId: 'session',
     });
     await queryClient.invalidateQueries({ queryKey: ENGAGEMENTS_KEY });
-    setDrawer({ kind: 'edit', id: record.id });
+    if (isCreating) { closeDrawer(); } else { setDrawer({ kind: 'edit', id: record.id }); }
   };
 
   const deleteEngagement = async (id: string) => {

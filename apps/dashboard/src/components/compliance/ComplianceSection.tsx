@@ -48,7 +48,10 @@ export function ComplianceSection() {
     );
     emitAudit({ action:isCreating?'create':'update', entity:'task', entityId:task.id, label:`Task "${task.task}" ${isCreating?'added':'saved'}`, tenantId:'session' });
     await queryClient.invalidateQueries({ queryKey: CHECKLIST_KEY });
-    setDrawer({ kind:'edit', id:task.id });
+    // After creating, close — the DB assigns a real UUID that differs from the
+    // client uid(), so keeping the drawer open would lose the id reference.
+    // After updating, stay open with the known UUID.
+    if (isCreating) { closeDrawer(); } else { setDrawer({ kind:'edit', id:task.id }); }
   };
 
   const deleteTask = async (id: string) => {

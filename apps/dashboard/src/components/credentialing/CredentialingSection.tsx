@@ -51,7 +51,7 @@ export function CredentialingSection() {
       tenantId: 'session',
     });
     await queryClient.invalidateQueries({ queryKey: PAYERS_KEY });
-    setDrawer({ kind: 'edit', id: record.id });
+    if (isCreating) { closeDrawer(); } else { setDrawer({ kind: 'edit', id: record.id }); }
   };
 
   const deletePayer = async (id: string) => {
