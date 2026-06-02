@@ -1,65 +1,60 @@
-/**
- * Licenses routes — proof-of-pattern for step 2.
- *
- * Shows how tenantId flows: JWT → request.tenantId → query helper.
- * The client cannot influence which tenant's data is returned.
- */
-
 import type { FastifyPluginAsync } from 'fastify';
 import type { DrizzleDb } from '@schissel/db';
 import {
   getLicensesByTenant,
-  getLicenseById,
   insertLicense,
-  updateLicense,
-  deleteLicense,
+  getLicenseByCode,
+  updateLicenseByCode,
+  deleteLicenseByCode,
 } from '@schissel/db';
-import { requireRole, requireMfa } from '../plugins/rbac.js';
+import { requireRole } from '../plugins/rbac.js';
 import { NotFoundError } from '@schissel/db';
 
 export const licensesRoutes: FastifyPluginAsync<{ db: DrizzleDb }> = async (fastify, { db }) => {
 
-  fastify.get('/', async (request) => {
-    return getLicensesByTenant(db, request.tenantId);
-  });
+  // List all licenses for this tenant
+  fastify.get('/', async (request) =>
+    getLicensesByTenant(db, request.tenantId),
+  );
 
-  fastify.get<{ Params: { id: string } }>('/:id', async (request, reply) => {
+  // Get by state code (e.g. /licenses/CA)
+  fastify.get<{ Params: { code: string } }>('/:code', async (request, reply) => {
     try {
-      return await getLicenseById(db, request.tenantId, request.params.id);
+      return await getLicenseByCode(db, request.tenantId, request.params.code.toUpperCase());
     } catch (err) {
       if (err instanceof NotFoundError) return reply.status(404).send({ error: err.message });
       throw err;
     }
   });
 
-  fastify.post<{ Body: { code: string; name: string; status?: string } }>('/', {
+  // Create a new license (strip client-supplied id if any)
+  fastify.post<{ Body: Record<string, unknown> }>('/', {
     preHandler: [requireRole('owner', 'admin')],
   }, async (request, reply) => {
-    const { code, name, status } = request.body;
-    const id = await insertLicense(db, request.tenantId, {
-      code,
-      name,
-      status: (status as 'active' | 'progress' | 'expiring' | 'none') ?? 'progress',
-    });
+    const { id: _id, ...data } = request.body as any;
+    const id = await insertLicense(db, request.tenantId, data);
     return reply.status(201).send({ id });
   });
 
-  fastify.patch<{ Params: { id: string }; Body: Record<string, unknown> }>('/:id', {
+  // Update by state code
+  fastify.patch<{ Params: { code: string }; Body: Record<string, unknown> }>('/:code', {
     preHandler: [requireRole('owner', 'admin')],
   }, async (request, reply) => {
     try {
-      return await updateLicense(db, request.tenantId, request.params.id, request.body);
+      const { id: _id, code: _code, ...data } = request.body as any;
+      return await updateLicenseByCode(db, request.tenantId, request.params.code.toUpperCase(), data);
     } catch (err) {
       if (err instanceof NotFoundError) return reply.status(404).send({ error: err.message });
       throw err;
     }
   });
 
-  fastify.delete<{ Params: { id: string } }>('/:id', {
+  // Delete by state code
+  fastify.delete<{ Params: { code: string } }>('/:code', {
     preHandler: [requireRole('owner')],
   }, async (request, reply) => {
     try {
-      await deleteLicense(db, request.tenantId, request.params.id);
+      await deleteLicenseByCode(db, request.tenantId, request.params.code.toUpperCase());
       return reply.status(204).send();
     } catch (err) {
       if (err instanceof NotFoundError) return reply.status(404).send({ error: err.message });

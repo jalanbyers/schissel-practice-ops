@@ -45,6 +45,39 @@ export async function updateLicense(
   return rows[0]!;
 }
 
+/** Look up a license by state code (unique per tenant). */
+export async function getLicenseByCode(db: DrizzleDb, tenantId: string, code: string) {
+  const rows = await db
+    .select()
+    .from(licenses)
+    .where(and(eq(licenses.tenantId, tenantId), eq(licenses.code, code)));
+  if (rows.length === 0) throw new NotFoundError('License not found');
+  return rows[0]!;
+}
+
+export async function updateLicenseByCode(
+  db: DrizzleDb,
+  tenantId: string,
+  code: string,
+  data: Partial<Omit<NewLicense, 'tenantId' | 'id' | 'createdAt'>>,
+) {
+  const rows = await db
+    .update(licenses)
+    .set({ ...data, updatedAt: new Date() })
+    .where(and(eq(licenses.tenantId, tenantId), eq(licenses.code, code)))
+    .returning({ id: licenses.id });
+  if (rows.length === 0) throw new NotFoundError('License not found');
+  return rows[0]!;
+}
+
+export async function deleteLicenseByCode(db: DrizzleDb, tenantId: string, code: string) {
+  const rows = await db
+    .delete(licenses)
+    .where(and(eq(licenses.tenantId, tenantId), eq(licenses.code, code)))
+    .returning({ id: licenses.id });
+  if (rows.length === 0) throw new NotFoundError('License not found');
+}
+
 export async function deleteLicense(db: DrizzleDb, tenantId: string, licenseId: string) {
   const rows = await db
     .delete(licenses)
