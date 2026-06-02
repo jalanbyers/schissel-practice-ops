@@ -7,3 +7,4 @@ export * from './queries/engagements.js';
 export * from './queries/checklist.js';
 export * from './queries/finances.js';
 export * from './queries/settings.js';
+export * from './queries/audit.js';

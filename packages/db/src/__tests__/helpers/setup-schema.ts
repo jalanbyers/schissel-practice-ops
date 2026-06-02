@@ -142,4 +142,18 @@ export async function setupSchema(db: DrizzleDb): Promise<void> {
       updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
     )
   `);
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS audit_log (
+      id          UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+      tenant_id   TEXT          NOT NULL,
+      ts          TIMESTAMPTZ   NOT NULL DEFAULT now(),
+      action      TEXT          NOT NULL,
+      entity      TEXT          NOT NULL,
+      entity_id   TEXT          NOT NULL,
+      label       TEXT          NOT NULL,
+      user_id     TEXT,
+      created_at  TIMESTAMPTZ   NOT NULL DEFAULT now()
+    )
+  `);
 }

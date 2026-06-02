@@ -7,6 +7,7 @@ import { engagementsRoutes } from './routes/engagements.js';
 import { financesRoutes }    from './routes/finances.js';
 import { complianceRoutes }  from './routes/compliance.js';
 import { settingsRoutes }    from './routes/settings.js';
+import { auditRoutes }       from './routes/audit.js';
 import { createDb } from '@schissel/db';
 
 const fastify = Fastify({ logger: true });
@@ -25,6 +26,7 @@ await fastify.register(engagementsRoutes, { prefix: '/v1/engagements', db });
 await fastify.register(financesRoutes,    { prefix: '/v1/finances',    db });
 await fastify.register(complianceRoutes,  { prefix: '/v1/compliance',  db });
 await fastify.register(settingsRoutes,    { prefix: '/v1/settings',    db });
+await fastify.register(auditRoutes,       { prefix: '/v1/audit',        db });
 
 fastify.listen({ port: config.port, host: '0.0.0.0' }, (err) => {
   if (err) { fastify.log.error(err); process.exit(1); }

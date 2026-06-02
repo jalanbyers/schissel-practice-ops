@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Check, Download } from 'lucide-react';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Card } from '@/components/ui/Card';
 import { AuditFeed } from '@/components/audit/AuditFeed';
+import { LoadingState } from '@/components/ui/LoadingState';
 import { US_GRID, US_NAMES } from '@/lib/us-grid';
 import { MOCK_SETTINGS } from '@/lib/mock-data';
 import { emitAudit } from '@/lib/audit';
 import { usePracticeProfile } from '@/components/providers/SettingsContext';
+import { useSettings, useUpdateSettings } from '@/hooks/use-settings';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -69,15 +71,35 @@ const STATE_CODES = [...US_GRID.map(([code]) => code)].sort();
 // Section
 // ---------------------------------------------------------------------------
 export function SettingsSection() {
-  // updateProfile propagates name/entity changes to the sidebar brand block
-  // via SettingsContext — no page reload needed.
   const { updateProfile } = usePracticeProfile();
+  const { data: apiSettings, isLoading, isError } = useSettings();
+  const { mutate: patchSettings } = useUpdateSettings();
 
   const [profile, setProfile] = useState<ProfileDraft>(DEFAULT_PROFILE);
   const [draft, setDraft]     = useState<ProfileDraft>(DEFAULT_PROFILE);
   const [saved, setSaved]     = useState(false);
   const [notifs, setNotifs]   = useState<NotifPrefs>(DEFAULT_NOTIFS);
   const [confirmReset, setConfirmReset] = useState(false);
+
+  // Hydrate local state from API response once loaded.
+  useEffect(() => {
+    if (!apiSettings) return;
+    const loaded: ProfileDraft = {
+      name:      apiSettings.name      || DEFAULT_PROFILE.name,
+      entity:    apiSettings.entity    || DEFAULT_PROFILE.entity,
+      homeState: apiSettings.homeState || DEFAULT_PROFILE.homeState,
+      timezone:  apiSettings.timezone  || DEFAULT_PROFILE.timezone,
+      npi:       apiSettings.npi       ?? '',
+      ein:       apiSettings.ein       ?? '',
+      email:     apiSettings.email     ?? '',
+      phone:     apiSettings.phone     ?? '',
+    };
+    setProfile(loaded);
+    setDraft(loaded);
+    if (apiSettings.notifications) {
+      setNotifs(apiSettings.notifications as NotifPrefs);
+    }
+  }, [apiSettings]);
 
   const setField = <K extends keyof ProfileDraft>(key: K, value: ProfileDraft[K]) => {
     setDraft(prev => ({ ...prev, [key]: value }));
@@ -90,16 +112,28 @@ export function SettingsSection() {
 
   const saveProfile = () => {
     setProfile(draft);
-    // Propagate to sidebar immediately — no page reload.
+    // 1. Update sidebar brand block immediately via context.
     updateProfile({ name: draft.name, entity: draft.entity });
-    setSaved(true);
+    // 2. Persist to /v1/settings (PATCH upsert, tenant-scoped).
+    patchSettings({
+      name:      draft.name,
+      entity:    draft.entity,
+      homeState: draft.homeState,
+      timezone:  draft.timezone,
+      npi:       draft.npi   || null,
+      ein:       draft.ein   || null,
+      email:     draft.email || null,
+      phone:     draft.phone || null,
+    });
+    // 3. Emit audit event (in-memory + POST /v1/audit).
     emitAudit({
-      action: 'update',
-      entity: 'task', // closest entity — settings is not in the entity enum; treat as misc
+      action:   'update',
+      entity:   'task',          // 'settings' not in entity enum; 'task' is closest
       entityId: 'settings',
-      label: `Practice profile updated (${draft.name})`,
+      label:    `Practice profile updated (${draft.name})`,
       tenantId: 'demo',
     });
+    setSaved(true);
     setTimeout(() => setSaved(false), 2200);
   };
 
@@ -107,6 +141,9 @@ export function SettingsSection() {
     setDraft(profile);
     setSaved(false);
   };
+
+  if (isLoading) return <LoadingState />;
+  if (isError)   return <LoadingState error message="Could not load settings. Check your connection." />;
 
   const setNotif = <K extends keyof NotifPrefs>(key: K, value: NotifPrefs[K]) => {
     setNotifs(prev => ({ ...prev, [key]: value }));
