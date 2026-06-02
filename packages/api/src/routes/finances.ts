@@ -59,7 +59,7 @@ export const financesRoutes: FastifyPluginAsync<{ db: DrizzleDb }> = async (fast
   fastify.post<{ Body: Record<string, unknown> }>('/ledger', {
     preHandler: [requireRole('owner', 'admin')],
   }, async (request, reply) => {
-    const id = await insertLedgerEntry(db, request.tenantId, request.body as any);
+    const id = await insertLedgerEntry(db, request.tenantId, (({ id, ...rest }) => rest)(request.body as any));
     return reply.status(201).send({ id });
   });
 
@@ -79,7 +79,7 @@ export const financesRoutes: FastifyPluginAsync<{ db: DrizzleDb }> = async (fast
   fastify.post<{ Body: Record<string, unknown> }>('/tax-payments', {
     preHandler: [requireRole('owner', 'admin')],
   }, async (request, reply) => {
-    const id = await upsertTaxPayment(db, request.tenantId, request.body as any);
+    const id = await upsertTaxPayment(db, request.tenantId, (({ id, ...rest }) => rest)(request.body as any));
     return reply.status(201).send({ id });
   });
 

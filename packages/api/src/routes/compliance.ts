@@ -25,7 +25,7 @@ export const complianceRoutes: FastifyPluginAsync<{ db: DrizzleDb }> = async (fa
   fastify.post<{ Body: Record<string, unknown> }>('/', {
     preHandler: [requireRole('owner', 'admin')],
   }, async (request, reply) => {
-    const id = await insertChecklistTask(db, request.tenantId, request.body as any);
+    const id = await insertChecklistTask(db, request.tenantId, (({ id, ...rest }) => rest)(request.body as any));
     return reply.status(201).send({ id });
   });
 

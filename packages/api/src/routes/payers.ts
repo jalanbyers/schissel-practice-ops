@@ -25,7 +25,7 @@ export const payersRoutes: FastifyPluginAsync<{ db: DrizzleDb }> = async (fastif
   fastify.post<{ Body: Record<string, unknown> }>('/', {
     preHandler: [requireRole('owner', 'admin')],
   }, async (request, reply) => {
-    const id = await insertPayer(db, request.tenantId, request.body as any);
+    const id = await insertPayer(db, request.tenantId, (({ id, ...rest }) => rest)(request.body as any));
     return reply.status(201).send({ id });
   });
 

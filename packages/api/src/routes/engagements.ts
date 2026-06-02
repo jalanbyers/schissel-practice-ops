@@ -25,7 +25,7 @@ export const engagementsRoutes: FastifyPluginAsync<{ db: DrizzleDb }> = async (f
   fastify.post<{ Body: Record<string, unknown> }>('/', {
     preHandler: [requireRole('owner', 'admin')],
   }, async (request, reply) => {
-    const id = await insertEngagement(db, request.tenantId, request.body as any);
+    const id = await insertEngagement(db, request.tenantId, (({ id, ...rest }) => rest)(request.body as any));
     return reply.status(201).send({ id });
   });
 
