@@ -63,7 +63,7 @@ const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (fastify, opts) 
   // Handlers must never be reached without these being set (enforced below).
   fastify.decorateRequest('tenantId',   '');
   fastify.decorateRequest('userId',     '');
-  fastify.decorateRequest('userRoles',  null);
+  fastify.decorateRequest('userRoles',  [] as string[]);
   fastify.decorateRequest('mfaVerified', false);
 
   fastify.addHook('onRequest', async (request, reply) => {
