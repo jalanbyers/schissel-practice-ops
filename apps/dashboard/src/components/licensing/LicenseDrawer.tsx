@@ -23,7 +23,10 @@ function blank(prefillCode?: string): LicenseRecord {
     code, name: code ? (US_NAMES[code] ?? code) : '',
     status: 'progress', imlc: false, home: false,
     date: null, expires: '', issued: '',
-    licenseNo: '', cycle: 'Biennial', fee: '',
+    licenseNo: '', cycle: 'Biennial',
+    fee: '', applicationFee: '',
+    timeline: '', cmeHours: null,
+    telehealthNotes: '',
     board: '', boardUrl: '',
     requirements: [], documents: [], notes: '',
   };
@@ -161,6 +164,25 @@ export function LicenseDrawer({ license, existingCodes, prefillCode, onSave, onD
                   onChange={e => set('fee', e.target.value)} />
               </div>
               <div className="field">
+                <label htmlFor="license-application-fee">Application fee</label>
+                <input id="license-application-fee" className="input" value={draft.applicationFee}
+                  placeholder="e.g. $400"
+                  onChange={e => set('applicationFee', e.target.value)} />
+              </div>
+              <div className="field">
+                <label htmlFor="license-timeline">Est. timeline</label>
+                <input id="license-timeline" className="input" value={draft.timeline}
+                  placeholder="e.g. 8–12 weeks"
+                  onChange={e => set('timeline', e.target.value)} />
+              </div>
+              <div className="field">
+                <label htmlFor="license-cme-hours">CME hours / cycle</label>
+                <input id="license-cme-hours" className="input" type="number" min={0}
+                  value={draft.cmeHours ?? ''}
+                  placeholder="e.g. 40"
+                  onChange={e => set('cmeHours', e.target.value === '' ? null : Number(e.target.value))} />
+              </div>
+              <div className="field">
                 <label htmlFor="license-issued">Issued</label>
                 <input id="license-issued" className="input" type="date" value={draft.issued}
                   onChange={e => set('issued', e.target.value)} />
@@ -198,6 +220,21 @@ export function LicenseDrawer({ license, existingCodes, prefillCode, onSave, onD
                   placeholder="e.g. board.state.gov"
                   onChange={e => set('boardUrl', e.target.value)} />
               </div>
+            </div>
+          </div>
+
+          {/* Telehealth */}
+          <div className="dgroup">
+            <div className="dgroup-head"><span className="dgroup-title">Telehealth</span></div>
+            <div className="field full">
+              <label htmlFor="license-telehealth-notes">Telehealth rules</label>
+              <textarea
+                id="license-telehealth-notes"
+                className="textarea"
+                value={draft.telehealthNotes}
+                placeholder="State-specific telehealth rules, restrictions, registration requirements…"
+                onChange={e => set('telehealthNotes', e.target.value)}
+              />
             </div>
           </div>
 

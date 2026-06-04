@@ -1,4 +1,4 @@
-import { pgTable, text, boolean, timestamp, uuid, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, text, boolean, timestamp, uuid, jsonb, integer } from 'drizzle-orm/pg-core';
 
 export type Requirement = { id: string; label: string; done: boolean };
 export type Document = { id: string; name: string; note: string };
@@ -15,7 +15,11 @@ export const licenses = pgTable('licenses', {
   issued:      text('issued'),
   expires:     text('expires'),
   cycle:       text('cycle', { enum: ['Annual', 'Biennial', 'Triennial'] }),
-  fee:         text('fee'),
+  fee:              text('fee'),
+  applicationFee:   text('application_fee'),
+  timeline:         text('timeline'),
+  cmeHours:         integer('cme_hours'),
+  telehealthNotes:  text('telehealth_notes'),
   board:       text('board'),
   boardUrl:    text('board_url'),
   notes:       text('notes'),

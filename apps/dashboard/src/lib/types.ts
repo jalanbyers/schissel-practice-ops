@@ -13,9 +13,6 @@ export interface LicenseDoc {
   name: string;
   note: string;
 }
-
-// Full record shape used in the Licensing workspace.
-// Mirrors the Drizzle `licenses` schema; the mock seed fills most fields empty.
 export interface LicenseRecord {
   code: string;
   name: string;
@@ -23,15 +20,20 @@ export interface LicenseRecord {
   imlc: boolean;
   home: boolean;
   // dates
-  date: string | null;   // submitted note or display date for in-progress
-  expires: string;       // ISO date for renewal countdown
+  date: string | null;
+  expires: string;
   issued: string;
   // facts
   licenseNo: string;
   cycle: RenewalCycle;
-  fee: string;
+  applicationFee: string;   // ← new: initial application fee
+  fee: string;              // renewal fee
+  timeline: string;         // ← new: e.g. "8–12 weeks"
+  cmeHours: number | null;  // ← new: CME hours required per cycle
   board: string;
   boardUrl: string;
+  // telehealth
+  telehealthNotes: string;  // ← new: state-specific telehealth rules
   // sub-docs
   requirements: Requirement[];
   documents: LicenseDoc[];

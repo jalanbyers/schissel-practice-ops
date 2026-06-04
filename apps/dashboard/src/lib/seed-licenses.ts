@@ -2,7 +2,7 @@
 import { MOCK_STATES } from './mock-data';
 import type { LicenseRecord } from './types';
 
-export function seedLicenses(): LicenseRecord[] {
+function buildLicenses(): LicenseRecord[] {
   return MOCK_STATES.map((s) => ({
     code: s.code,
     name: s.name,
@@ -15,7 +15,9 @@ export function seedLicenses(): LicenseRecord[] {
     issued: '',
     licenseNo: '',
     cycle: 'Biennial' as const,
-    fee: '',
+    fee: '', applicationFee: '',
+    timeline: '', cmeHours: null,
+    telehealthNotes: '',
     board: '',
     boardUrl: '',
     requirements: [],
@@ -23,3 +25,6 @@ export function seedLicenses(): LicenseRecord[] {
     notes: '',
   }));
 }
+
+export function seedLicenses(): LicenseRecord[] { return buildLicenses(); }
+export const MOCK_LICENSES: LicenseRecord[] = buildLicenses();
