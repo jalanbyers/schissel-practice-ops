@@ -5,7 +5,9 @@ import type { NextRequest } from 'next/server';
 const USE_MOCK = process.env['NEXT_PUBLIC_USE_MOCK'] === 'true';
 
 export default function middleware(request: NextRequest) {
-  if (USE_MOCK) return NextResponse.next();
+  if (USE_MOCK && !request.nextUrl.pathname.startsWith('/api/auth')) {
+    return NextResponse.next();
+  }
   return auth0.middleware(request);
 }
 
