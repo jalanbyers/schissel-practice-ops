@@ -1,8 +1,9 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // SSR-first by design (PHI boundary rule).
-  // No client-side persistence layers are configured.
+  env: {
+    NEXT_PUBLIC_USE_MOCK: process.env['NEXT_PUBLIC_USE_MOCK'] ?? 'false',
+  },
 };
 
 export default nextConfig;
