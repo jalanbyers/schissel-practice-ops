@@ -94,6 +94,9 @@ export function LicensingSection() {
 
   return (
     <div>
+      <div style={{fontSize:11, color:'red', padding:'4px 8px'}}>
+        MOCK: {process.env['NEXT_PUBLIC_USE_MOCK'] ?? 'undefined'}
+      </div>
       <SectionHeader
         title="Licensing"
         desc="State medical licenses, renewal dates, and a living reference doc of renewal requirements per state."
