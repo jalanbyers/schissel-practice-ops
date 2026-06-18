@@ -10,7 +10,8 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { TaskDrawer } from './TaskDrawer';
 import { LicensingRoadmap } from './LicensingRoadmap';
-import { daysUntil, fmtDate } from '@/lib/date-helpers';
+import type { RoadmapStep } from './LicensingRoadmap';
+import { daysUntil, fmtDate, uid } from '@/lib/date-helpers';
 import { CHK_STATUS_OPTS, CHK_SORT_ORDER } from '@/lib/types';
 import type { ChecklistTask } from '@/lib/types';
 import { clientFetch } from '@/lib/client-fetch';
@@ -70,6 +71,29 @@ export function ComplianceSection() {
     await clientFetch(`/compliance/${id}`, { method:'PATCH', body:JSON.stringify({ status:nextStatus }) });
     emitAudit({ action:'toggle', entity:'task', entityId:id, label:`Task "${task?.task??id}" marked ${nextStatus==='done'?'done':'not started'}`, tenantId:'session' });
     await queryClient.invalidateQueries({ queryKey: CHECKLIST_KEY });
+  };
+
+  const createFromRoadmap = async (step: RoadmapStep) => {
+    const newTask = {
+      id: uid(),
+      task: step.label,
+      group: step.group,
+      status: 'notstarted' as const,
+      date: step.date,
+      owner: '',
+      requirements: [],
+      documents: [],
+      notes: '',
+    };
+    if (process.env['NEXT_PUBLIC_USE_MOCK'] === 'true') {
+      queryClient.setQueryData<typeof tasks>(CHECKLIST_KEY, (prev) =>
+        [...(prev ?? []), newTask],
+      );
+    } else {
+      await clientFetch('/compliance', { method: 'POST', body: JSON.stringify(newTask) });
+      emitAudit({ action: 'create', entity: 'task', entityId: newTask.id, label: `Task "${step.label}" added from roadmap`, tenantId: 'session' });
+      await queryClient.invalidateQueries({ queryKey: CHECKLIST_KEY });
+    }
   };
 
   const editingTask = drawer.kind==='edit' ? tasks.find(c=>c.id===drawer.id)??null : null;
@@ -168,7 +192,7 @@ export function ComplianceSection() {
         </div>
       </div>
 
-      <LicensingRoadmap />
+      <LicensingRoadmap tasks={tasks} onCreateTask={createFromRoadmap} />
 
       {drawer.kind!=='closed'&&(
         <TaskDrawer key={drawer.kind==='edit'?drawer.id:'__new__'}

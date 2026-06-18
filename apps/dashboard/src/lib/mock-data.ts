@@ -97,15 +97,4 @@ export const MOCK_ENGAGEMENTS: MockEngagement[] = [
   { name: 'Sesame',         model: 'Direct cash',     volume: 'Paused',        rate: '$45 / visit',  status: 'hold'   },
 ];
 
-export const MOCK_CHECKLIST: MockCheckItem[] = [
-  { task: 'Single-member PLLC formation',         group: 'Entity',      status: 'done',       date: null          },
-  { task: 'EIN from IRS',                         group: 'Entity',      status: 'done',       date: null          },
-  { task: 'Business bank account',                group: 'Banking',     status: 'done',       date: null          },
-  { task: 'Malpractice insurance (occurrence)',   group: 'Insurance',   status: 'done',       date: null          },
-  { task: 'NPI Type 2 (organization)',            group: 'Identifiers', status: 'done',       date: null          },
-  { task: 'Registered agent on file',             group: 'Entity',      status: 'done',       date: null          },
-  { task: 'HIPAA security risk assessment',       group: 'HIPAA',       status: 'progress',   date: '2026-06-15'  },
-  { task: 'BAAs with telehealth platforms (2/4)', group: 'HIPAA',       status: 'progress',   date: '2026-06-30'  },
-  { task: 'HIPAA policies & procedures',          group: 'HIPAA',       status: 'notstarted', date: '2026-07-10'  },
-  { task: 'Cyber liability insurance',            group: 'Insurance',   status: 'notstarted', date: '2026-07-15'  },
-];
+export const MOCK_CHECKLIST: MockCheckItem[] = [];

@@ -52,7 +52,7 @@ export const RENEWAL_CYCLES: RenewalCycle[] = ['Annual', 'Biennial', 'Triennial'
 // ─── Compliance ──────────────────────────────────────────────────────────────
 
 export type CheckStatus  = 'notstarted' | 'progress' | 'done';
-export type ChecklistGroup = 'Entity' | 'Banking' | 'Insurance' | 'Identifiers' | 'HIPAA' | 'General';
+export type ChecklistGroup = 'Entity' | 'Banking' | 'Insurance' | 'Identifiers' | 'HIPAA' | 'Licensing' | 'General';
 
 export interface ChecklistTask {
   id: string;
@@ -73,7 +73,7 @@ export const CHK_STATUS_OPTS: [string, string, string][] = [
 ];
 
 export const CHK_GROUPS: ChecklistGroup[] = [
-  'Entity', 'Banking', 'Insurance', 'Identifiers', 'HIPAA', 'General',
+  'Entity', 'Banking', 'Insurance', 'Identifiers', 'HIPAA', 'Licensing', 'General',
 ];
 
 // Sort: in-progress first, not-started next, done last; then by due date within group
