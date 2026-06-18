@@ -9,6 +9,7 @@ import { StatusPill, CHK_STATUS } from '@/components/ui/StatusPill';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { TaskDrawer } from './TaskDrawer';
+import { LicensingRoadmap } from './LicensingRoadmap';
 import { daysUntil, fmtDate } from '@/lib/date-helpers';
 import { CHK_STATUS_OPTS, CHK_SORT_ORDER } from '@/lib/types';
 import type { ChecklistTask } from '@/lib/types';
@@ -166,6 +167,8 @@ export function ComplianceSection() {
           </Card>
         </div>
       </div>
+
+      <LicensingRoadmap />
 
       {drawer.kind!=='closed'&&(
         <TaskDrawer key={drawer.kind==='edit'?drawer.id:'__new__'}
