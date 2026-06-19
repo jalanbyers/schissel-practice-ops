@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Search, Plus, Check, ShieldAlert } from 'lucide-react';
+
+const USE_MOCK = process.env['NEXT_PUBLIC_USE_MOCK'] === 'true';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Card } from '@/components/ui/Card';
 import { StatusPill, CHK_STATUS } from '@/components/ui/StatusPill';
@@ -16,6 +18,7 @@ import { CHK_STATUS_OPTS, CHK_SORT_ORDER } from '@/lib/types';
 import type { ChecklistTask } from '@/lib/types';
 import { clientFetch } from '@/lib/client-fetch';
 import { emitAudit } from '@/lib/audit';
+import { mockTaskStore } from '@/lib/mock-store';
 import { useChecklist, CHECKLIST_KEY } from '@/hooks/use-checklist';
 
 type DrawerState = { kind:'closed' } | { kind:'edit'; id:string } | { kind:'new' };
@@ -44,22 +47,27 @@ export function ComplianceSection() {
 
   const saveTask = async (task: ChecklistTask) => {
     const isCreating = !tasks.some(c=>c.id===task.id);
-    await clientFetch(
-      isCreating?'/compliance':`/compliance/${task.id}`,
-      { method:isCreating?'POST':'PATCH', body:JSON.stringify(task) },
-    );
-    emitAudit({ action:isCreating?'create':'update', entity:'task', entityId:task.id, label:`Task "${task.task}" ${isCreating?'added':'saved'}`, tenantId:'session' });
+    if (USE_MOCK) {
+      isCreating ? mockTaskStore.add(task) : mockTaskStore.update(task.id, task);
+    } else {
+      await clientFetch(
+        isCreating?'/compliance':`/compliance/${task.id}`,
+        { method:isCreating?'POST':'PATCH', body:JSON.stringify(task) },
+      );
+      emitAudit({ action:isCreating?'create':'update', entity:'task', entityId:task.id, label:`Task "${task.task}" ${isCreating?'added':'saved'}`, tenantId:'session' });
+    }
     await queryClient.invalidateQueries({ queryKey: CHECKLIST_KEY });
-    // After creating, close — the DB assigns a real UUID that differs from the
-    // client uid(), so keeping the drawer open would lose the id reference.
-    // After updating, stay open with the known UUID.
     if (isCreating) { closeDrawer(); } else { setDrawer({ kind:'edit', id:task.id }); }
   };
 
   const deleteTask = async (id: string) => {
     const task = tasks.find(c=>c.id===id);
-    await clientFetch(`/compliance/${id}`, { method:'DELETE' });
-    emitAudit({ action:'delete', entity:'task', entityId:id, label:`Task "${task?.task??id}" deleted`, tenantId:'session' });
+    if (USE_MOCK) {
+      mockTaskStore.remove(id);
+    } else {
+      await clientFetch(`/compliance/${id}`, { method:'DELETE' });
+      emitAudit({ action:'delete', entity:'task', entityId:id, label:`Task "${task?.task??id}" deleted`, tenantId:'session' });
+    }
     await queryClient.invalidateQueries({ queryKey: CHECKLIST_KEY });
     closeDrawer();
   };
@@ -67,14 +75,18 @@ export function ComplianceSection() {
   const quickToggle = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const task = tasks.find(c=>c.id===id);
-    const nextStatus = task?.status==='done'?'notstarted':'done';
-    await clientFetch(`/compliance/${id}`, { method:'PATCH', body:JSON.stringify({ status:nextStatus }) });
-    emitAudit({ action:'toggle', entity:'task', entityId:id, label:`Task "${task?.task??id}" marked ${nextStatus==='done'?'done':'not started'}`, tenantId:'session' });
+    const nextStatus: ChecklistTask['status'] = task?.status === 'done' ? 'progress' : 'done';
+    if (USE_MOCK) {
+      mockTaskStore.update(id, { status: nextStatus });
+    } else {
+      await clientFetch(`/compliance/${id}`, { method:'PATCH', body:JSON.stringify({ status:nextStatus }) });
+      emitAudit({ action:'toggle', entity:'task', entityId:id, label:`Task "${task?.task??id}" marked ${nextStatus==='done'?'done':'in progress'}`, tenantId:'session' });
+    }
     await queryClient.invalidateQueries({ queryKey: CHECKLIST_KEY });
   };
 
   const createFromRoadmap = async (step: RoadmapStep) => {
-    const newTask = {
+    const newTask: ChecklistTask = {
       id: uid(),
       task: step.label,
       group: step.group,
@@ -85,15 +97,13 @@ export function ComplianceSection() {
       documents: [],
       notes: '',
     };
-    if (process.env['NEXT_PUBLIC_USE_MOCK'] === 'true') {
-      queryClient.setQueryData<typeof tasks>(CHECKLIST_KEY, (prev) =>
-        [...(prev ?? []), newTask],
-      );
+    if (USE_MOCK) {
+      mockTaskStore.add(newTask);
     } else {
       await clientFetch('/compliance', { method: 'POST', body: JSON.stringify(newTask) });
       emitAudit({ action: 'create', entity: 'task', entityId: newTask.id, label: `Task "${step.label}" added from roadmap`, tenantId: 'session' });
-      await queryClient.invalidateQueries({ queryKey: CHECKLIST_KEY });
     }
+    await queryClient.invalidateQueries({ queryKey: CHECKLIST_KEY });
   };
 
   const editingTask = drawer.kind==='edit' ? tasks.find(c=>c.id===drawer.id)??null : null;
