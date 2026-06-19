@@ -1,17 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { clientJson } from '@/lib/client-fetch';
 import { mockTaskStore } from '@/lib/mock-store';
 import type { ChecklistTask } from '@/lib/types';
 
 export const CHECKLIST_KEY = ['checklist'] as const;
 
-const USE_MOCK = process.env['NEXT_PUBLIC_USE_MOCK'] === 'true';
-
 export function useChecklist() {
   return useQuery<ChecklistTask[]>({
     queryKey: CHECKLIST_KEY,
-    queryFn: USE_MOCK
-      ? () => Promise.resolve([...mockTaskStore.getAll()])
-      : () => clientJson<ChecklistTask[]>('/compliance'),
+    queryFn: () => Promise.resolve([...mockTaskStore.getAll()]),
   });
 }
