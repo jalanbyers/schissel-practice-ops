@@ -10,7 +10,7 @@ function get(): ChecklistTask[] {
     try { _tasks = JSON.parse(localStorage.getItem(KEY) ?? '[]'); }
     catch { _tasks = []; }
   }
-  return _tasks;
+  return _tasks!;
 }
 
 function persist(tasks: ChecklistTask[]) {
