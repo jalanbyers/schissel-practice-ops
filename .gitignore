@@ -44,3 +44,7 @@ coverage/
 # Misc
 .cache/
 tmp/
+
+# ADK agent eval artifacts (traces + grade results are run outputs)
+packages/licensure-agent/artifacts/
+packages/licensure-agent/.agents-cli-scripts/

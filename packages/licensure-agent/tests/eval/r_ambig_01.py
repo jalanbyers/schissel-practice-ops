@@ -28,7 +28,25 @@ import json
 import re
 from pathlib import Path
 
-_DATA = Path(__file__).resolve().parents[2] / "app" / "data" / "state_requirements.json"
+_REL = Path("app") / "data" / "state_requirements.json"
+
+
+def _find_data() -> Path:
+    """Locate the frozen fixture without relying on __file__.
+
+    `agents-cli eval grade` compiles this module via exec() with no __file__
+    in scope, so the usual Path(__file__) resolution raises NameError. Walk up
+    from the working directory instead, which works both under the grader and
+    under pytest.
+    """
+    here = Path.cwd().resolve()
+    for base in (here, *here.parents):
+        candidate = base / _REL
+        if candidate.is_file():
+            return candidate
+    raise FileNotFoundError(
+        f"could not locate {_REL} from {here} or any parent directory"
+    )
 
 VALID_FAILURE_MODES = {
     "internal_contradiction",
@@ -63,7 +81,7 @@ AUTHORIZATION_DENY_LIST = [
 
 
 def _ohio_requirement_text() -> str:
-    records = json.loads(_DATA.read_text())
+    records = json.loads(_find_data().read_text())
     oh = next(r for r in records if r["state"] == "OH")
     return oh["requirement_summary"]
 

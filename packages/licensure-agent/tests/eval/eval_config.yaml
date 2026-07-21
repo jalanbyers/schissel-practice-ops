@@ -4,7 +4,12 @@ metrics_to_run:
   # contradictory text, which an LLM judge could be talked out of and a
   # label-lookup cannot do at all. Runs in-process — no GCP project needed.
   - r_ambig_01
-  - custom_response_quality
+  # custom_response_quality (the scaffold's LLM-as-judge) is defined below but
+  # not run: it constructs genai.Client() with no args, which resolves to ADC
+  # /Vertex rather than the GEMINI_API_KEY in .env, and hangs on retries since
+  # aiplatform.googleapis.com is not enabled. Re-enable when either the Vertex
+  # path is set up or the judge is pointed explicitly at the API key.
+  # - custom_response_quality
 
 custom_metrics:
   - name: r_ambig_01
