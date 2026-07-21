@@ -1,0 +1,15 @@
+{
+  "eval_cases": [
+    {
+      "eval_case_id": "r_ambig_01_ohio_conflict_from_language",
+      "prompt": {
+        "role": "user",
+        "parts": [
+          {
+            "text": "Contract SYN-CONTRACT-1001. Planned first patient-care date: 2026-10-01.\n\nAnalyze the licensure status for Ohio (OH) for this physician.\n\nEvaluate all four clarity conditions against the state requirement record before assigning any status:\n  1. The requirement was checked no more than 90 days before the planned care date.\n  2. The source is an official state medical-board or state-government source.\n  3. All required fields are complete.\n  4. The record contains no ambiguous or conflicting language.\n\nReturn a JSON object with this shape:\n{\n  \"state\": \"OH\",\n  \"status\": \"<license_current|renewal_needed|application_in_progress|new_application_needed|human_review_required>\",\n  \"approval_status\": \"pending_physician_review\",\n  \"evidence\": [\"<record_id>\"],\n  \"clarity_checks\": [\n    {\"condition_number\": 1, \"verdict\": \"pass|fail\", \"reasoning\": \"...\"},\n    {\"condition_number\": 2, \"verdict\": \"pass|fail\", \"reasoning\": \"...\"},\n    {\"condition_number\": 3, \"verdict\": \"pass|fail\", \"reasoning\": \"...\"},\n    {\"condition_number\": 4, \"verdict\": \"pass|fail\", \"failure_mode\": \"internal_contradiction|unbounded_vagueness|undefined_conditional|scope_ambiguity|temporal_instability\", \"quoted_span\": \"<verbatim substring of the requirement text>\", \"reasoning\": \"...\"}\n  ],\n  \"escalation_reason\": \"...\",\n  \"recommended_expert\": \"...\"\n}\n\nIf condition 4 fails, quoted_span MUST be copied verbatim from the requirement text — do not paraphrase it."
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -44,3 +44,12 @@ coverage/
 # Misc
 .cache/
 tmp/
+
+# ADK agent eval artifacts (traces + grade results are run outputs)
+packages/licensure-agent/artifacts/
+packages/licensure-agent/.agents-cli-scripts/
+
+# Python build artifacts (kept at root so the rule survives branch switches
+# that do not carry packages/licensure-agent/.gitignore)
+__pycache__/
+*.py[cod]

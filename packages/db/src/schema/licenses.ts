@@ -22,6 +22,8 @@ export const licenses = pgTable('licenses', {
   telehealthNotes:  text('telehealth_notes'),
   board:       text('board'),
   boardUrl:    text('board_url'),
+  /** ISO date the board requirements were last verified against the source. */
+  lastChecked: text('last_checked'),
   notes:       text('notes'),
   requirements: jsonb('requirements').$type<Requirement[]>().notNull().default([]),
   documents:   jsonb('documents').$type<Document[]>().notNull().default([]),

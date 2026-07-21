@@ -1,0 +1,25 @@
+metrics_to_run:
+  # R-AMBIG-01 is the faculty-mandated acceptance criterion (DESIGN_SPEC §10).
+  # Deterministic on purpose: it verifies the agent quotes the actual
+  # contradictory text, which an LLM judge could be talked out of and a
+  # label-lookup cannot do at all. Runs in-process — no GCP project needed.
+  - r_ambig_01
+  # custom_response_quality (the scaffold's LLM-as-judge) is defined below but
+  # not run: it constructs genai.Client() with no args, which resolves to ADC
+  # /Vertex rather than the GEMINI_API_KEY in .env, and hangs on retries since
+  # aiplatform.googleapis.com is not enabled. Re-enable when either the Vertex
+  # path is set up or the judge is pointed explicitly at the API key.
+  # - custom_response_quality
+
+custom_metrics:
+  - name: r_ambig_01
+    custom_function_file: r_ambig_01.py
+  # Default: local LLM-as-judge (see response_quality.py). Runs in-process via
+  # google-genai on Agent Platform (ADC) or Google AI Studio (GEMINI_API_KEY).
+  - name: custom_response_quality
+    custom_function_file: response_quality.py
+  - name: agent_turn_count
+    custom_function: |
+      def evaluate(instance):
+          turns = (instance.get("agent_data") or {}).get("turns", [])
+          return {'score': len(turns)}
