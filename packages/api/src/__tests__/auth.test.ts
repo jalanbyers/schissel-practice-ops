@@ -151,9 +151,21 @@ describe('invalid token — no oracle', () => {
 
   it('returns the same error message for a tampered token', async () => {
     const good = await auth.sign({ tenantId: TENANT_A });
-    // Flip one character in the signature segment
     const [h, p, sig] = good.split('.');
-    const tampered = [h, p, sig!.slice(0, -1) + (sig!.endsWith('x') ? 'y' : 'x')].join('.');
+
+    // Tamper in the MIDDLE of the signature, not at the end.
+    //
+    // An RS256 signature is 256 bytes = 2048 bits, which base64url encodes in
+    // 342 characters = 2052 bits. The final character therefore carries 4
+    // unused padding bits, so 15 of its 63 possible substitutions decode to
+    // the identical signature bytes — the token still verifies and no 401 is
+    // returned. Flipping the last character made this test pass only ~76% of
+    // the time. Every bit of a middle character is significant.
+    const i = Math.floor(sig!.length / 2);
+    const flipped = sig![i] === 'A' ? 'B' : 'A';
+    const tamperedSig = sig!.slice(0, i) + flipped + sig!.slice(i + 1);
+    expect(tamperedSig).not.toBe(sig);
+    const tampered = [h, p, tamperedSig].join('.');
 
     const res = await app.inject({
       method: 'GET', url: '/me',
