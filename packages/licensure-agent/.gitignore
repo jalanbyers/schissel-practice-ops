@@ -79,9 +79,6 @@ docs/_build/
 # PyBuilder
 target/
 
-# Jupyter Notebook
-.ipynb_checkpoints
-
 # IPython
 profile_default/
 ipython_config.py
@@ -108,6 +105,8 @@ celerybeat.pid
 *.sage.py
 
 # Environments
+.env
+!.env.example
 .venv
 .venv*
 env/
@@ -126,10 +125,13 @@ venv.bak/
 # mkdocs documentation
 /site
 
-# mypy
+# mypy (legacy, kept for compatibility)
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# ty (Astral's type checker)
+.ty/
 
 # Pyre type checker
 .pyre/
@@ -146,17 +148,12 @@ dmypy.json
 
 
 tmp*
+.agents-cli-scripts/
 
 # Node
 **/node_modules
 npm-debug.log
 yarn-error.log
-
-# TypeScript
-dist/
-*.tsbuildinfo
-*.js.map
-*.d.ts.map
 
 # IDEs and editors
 .idea/
@@ -193,15 +190,15 @@ Thumbs.db
 # ADK
 .adk/
 
-# Starter pack specific
-.env
+# Agent CLI specific
 .persist_vector_store
 tests/load_test/.results/*.html
 tests/load_test/.results/*.csv
 .locust_env
 my_env.tfvars
 .saved_chats
-.useful_repos/
+.env
+.google-agents-cli/
 
 # A2A Inspector
 tools/a2a-inspector/

@@ -1,4 +1,4 @@
-# Copyright 2025 Google LLC
+# Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,19 +20,12 @@ resource "google_cloud_run_v2_service" "app" {
   deletion_protection = false
   ingress             = "INGRESS_TRAFFIC_ALL"
   labels = {
-    "created-by" = "adk"
-    "language"   = "typescript"
+    "created-by"                  = "adk"
   }
 
   template {
     containers {
       image = "us-docker.pkg.dev/cloudrun/container/hello"
-      resources {
-        limits = {
-          cpu    = "1"
-          memory = "4Gi"
-        }
-      }
 
       env {
         name  = "APP_URL"
@@ -46,12 +39,19 @@ resource "google_cloud_run_v2_service" "app" {
 
       env {
         name  = "GOOGLE_CLOUD_LOCATION"
-        value = var.region
+        value = "global"
       }
 
       env {
         name  = "GOOGLE_GENAI_USE_VERTEXAI"
-        value = "true"
+        value = "True"
+      }
+
+      resources {
+        limits = {
+          cpu    = "1"
+          memory = "4Gi"
+        }
       }
 
       env {
@@ -65,7 +65,7 @@ resource "google_cloud_run_v2_service" "app" {
       }
     }
 
-    service_account                  = google_service_account.app_sa.email
+    service_account = google_service_account.app_sa.email
     max_instance_request_concurrency = 8
 
     scaling {
