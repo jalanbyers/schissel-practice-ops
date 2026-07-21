@@ -28,6 +28,7 @@ function blank(prefillCode?: string): LicenseRecord {
     timeline: '', cmeHours: null,
     telehealthNotes: '',
     board: '', boardUrl: '',
+    lastChecked: '',
     requirements: [], documents: [], notes: '',
   };
 }

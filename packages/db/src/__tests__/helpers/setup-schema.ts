@@ -36,6 +36,7 @@ export async function setupSchema(db: DrizzleDb): Promise<void> {
       telehealth_notes TEXT,
       board        TEXT,
       board_url    TEXT,
+      last_checked TEXT,
       notes        TEXT,
       requirements JSONB       NOT NULL DEFAULT '[]',
       documents    JSONB       NOT NULL DEFAULT '[]',

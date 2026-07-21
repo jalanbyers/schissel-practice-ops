@@ -16,6 +16,7 @@ const PATCHES: Partial<Record<string, Partial<LicenseRecord>>> = {
     cmeHours: 100,
     board: 'New Hampshire Board of Medicine',
     boardUrl: 'https://www.oplc.nh.gov/medicine',
+    lastChecked: '2026-07-14',
     telehealthNotes:
       'NH participates in IMLC — IMLC compact privilege is valid for telehealth. ' +
       'No separate telehealth registration required for NH-licensed physicians. ' +
@@ -45,6 +46,7 @@ const PATCHES: Partial<Record<string, Partial<LicenseRecord>>> = {
     cmeHours: 50,
     board: 'Massachusetts Board of Registration in Medicine',
     boardUrl: 'https://www.mass.gov/orgs/board-of-registration-in-medicine',
+    lastChecked: '2026-07-09',
     telehealthNotes:
       'MA does not participate in IMLC. A full MA license is required to see MA patients. ' +
       'No separate telehealth registration. Prescribing via telehealth is permitted; ' +
@@ -74,6 +76,7 @@ const PATCHES: Partial<Record<string, Partial<LicenseRecord>>> = {
     cmeHours: 50,
     board: 'Medical Board of California',
     boardUrl: 'https://www.mbc.ca.gov',
+    lastChecked: '2026-07-15',
     telehealthNotes:
       'CA does not participate in IMLC. A full CA license is required. ' +
       'Telehealth is broadly permitted under CA law. ' +
@@ -105,6 +108,7 @@ const PATCHES: Partial<Record<string, Partial<LicenseRecord>>> = {
     cmeHours: 48,
     board: 'Texas Medical Board',
     boardUrl: 'https://www.tmb.state.tx.us',
+    lastChecked: '2026-07-11',
     telehealthNotes:
       'TX does not participate in IMLC. A full TX license is required to treat TX patients. ' +
       'SB 1107 (2017) allows telehealth services without a prior in-person visit as long as ' +
@@ -136,6 +140,7 @@ const PATCHES: Partial<Record<string, Partial<LicenseRecord>>> = {
     cmeHours: 40,
     board: 'Florida Board of Medicine',
     boardUrl: 'https://flboardofmedicine.gov',
+    lastChecked: '2026-07-16',
     telehealthNotes:
       'No separate telehealth registration required for FL-licensed physicians. ' +
       'Schedule II controlled substances cannot be prescribed via telehealth except for ' +
@@ -169,6 +174,7 @@ const PATCHES: Partial<Record<string, Partial<LicenseRecord>>> = {
     cmeHours: 150,
     board: 'New York State Board for Medicine',
     boardUrl: 'https://www.op.nysed.gov/professions/medicine',
+    lastChecked: '2026-07-12',
     telehealthNotes:
       'NY does not participate in IMLC. A full NY license is required. ' +
       'Telehealth is authorized under Education Law §6524(17). ' +
@@ -201,6 +207,7 @@ const PATCHES: Partial<Record<string, Partial<LicenseRecord>>> = {
     cmeHours: 150,
     board: 'Illinois Department of Financial & Professional Regulation — Division of Professional Regulation',
     boardUrl: 'https://idfpr.illinois.gov/profs/medicaldr.asp',
+    lastChecked: '2026-07-08',
     telehealthNotes:
       'IL participates in IMLC — compact privilege is valid for telehealth. ' +
       'No separate telehealth registration required for IL-licensed physicians. ' +
@@ -230,6 +237,7 @@ const PATCHES: Partial<Record<string, Partial<LicenseRecord>>> = {
     cmeHours: 40,
     board: 'Georgia Composite Medical Board',
     boardUrl: 'https://gcmb.georgia.gov',
+    lastChecked: '2026-07-13',
     telehealthNotes:
       'GA participates in IMLC — compact privilege is valid for telehealth. ' +
       'No separate telehealth registration required. ' +
@@ -259,6 +267,7 @@ const PATCHES: Partial<Record<string, Partial<LicenseRecord>>> = {
     cmeHours: 60,
     board: 'North Carolina Medical Board',
     boardUrl: 'https://www.ncmedboard.org',
+    lastChecked: '2026-07-10',
     telehealthNotes:
       'NC does not currently participate in IMLC. A full NC license is required. ' +
       'Telehealth is permitted under G.S. 90-18.5; no separate telehealth registration. ' +
@@ -289,6 +298,7 @@ const PATCHES: Partial<Record<string, Partial<LicenseRecord>>> = {
     cmeHours: 100,
     board: 'Pennsylvania State Board of Medicine',
     boardUrl: 'https://www.dos.pa.gov/ProfessionalLicensing/BoardsCommissions/Medicine',
+    lastChecked: '2026-07-07',
     telehealthNotes:
       'PA participates in IMLC — compact privilege is valid for telehealth. ' +
       'No separate telehealth registration required for PA-licensed physicians. ' +
@@ -320,6 +330,7 @@ const PATCHES: Partial<Record<string, Partial<LicenseRecord>>> = {
     cmeHours: 200,
     board: 'Washington Medical Commission',
     boardUrl: 'https://wmc.wa.gov',
+    lastChecked: '2026-07-06',
     telehealthNotes:
       'WA participates in IMLC — compact privilege is valid for telehealth. ' +
       'No separate telehealth registration required. ' +
@@ -350,6 +361,7 @@ const PATCHES: Partial<Record<string, Partial<LicenseRecord>>> = {
     cmeHours: 60,
     board: 'Virginia Board of Medicine',
     boardUrl: 'https://www.dhp.virginia.gov/medicine',
+    lastChecked: '2026-07-09',
     telehealthNotes:
       'VA participates in IMLC — compact privilege is valid for telehealth. ' +
       'No separate telehealth registration required for VA-licensed physicians. ' +
@@ -379,6 +391,7 @@ const PATCHES: Partial<Record<string, Partial<LicenseRecord>>> = {
     cmeHours: 100,
     board: 'State Medical Board of Ohio',
     boardUrl: 'https://med.ohio.gov',
+    lastChecked: '2026-07-15',
     telehealthNotes:
       'OH participates in IMLC — compact privilege is valid for telehealth. ' +
       'No separate telehealth registration required for OH-licensed physicians. ' +
@@ -411,6 +424,7 @@ const PATCHES: Partial<Record<string, Partial<LicenseRecord>>> = {
     cmeHours: 40,
     board: 'Arizona Medical Board',
     boardUrl: 'https://azmd.gov',
+    lastChecked: '2026-03-15',
     telehealthNotes:
       'AZ participates in IMLC — compact privilege is valid for telehealth. ' +
       'No separate telehealth registration required. ' +
@@ -454,6 +468,7 @@ function buildLicenses(): LicenseRecord[] {
       telehealthNotes: '',
       board: '',
       boardUrl: '',
+      lastChecked: '',
       requirements: [],
       documents: [],
       notes: '',

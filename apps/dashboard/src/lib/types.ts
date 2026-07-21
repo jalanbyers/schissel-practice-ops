@@ -32,6 +32,7 @@ export interface LicenseRecord {
   cmeHours: number | null;  // ← new: CME hours required per cycle
   board: string;
   boardUrl: string;
+  lastChecked: string;      // ← new: ISO date requirements were last verified; '' = never
   // telehealth
   telehealthNotes: string;  // ← new: state-specific telehealth rules
   // sub-docs
