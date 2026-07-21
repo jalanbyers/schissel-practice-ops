@@ -32,6 +32,19 @@ dashboard.
 must catch the Ohio record's self-contradiction from the language alone, with a
 verbatim quoted span. See `docs/DESIGN_SPEC.md` §10.
 
+## Running the eval
+
+```bash
+agents-cli eval run --dataset tests/eval/datasets/r-ambig-01.json
+uv run --with pytest pytest tests/unit/ -q     # structural guarantees
+```
+
+**Rate limit.** The AI Studio free tier allows **5 requests/minute** for
+`gemini-3.6-flash`, and one eval case costs 2–3 requests. Back-to-back runs will
+hit `429 RESOURCE_EXHAUSTED` — that is a quota failure, not an agent failure, and
+shows up as a case with no score rather than a low one. Space runs ~30s apart, or
+move to a paid tier when iterating on the full suite.
+
 Agent generated with `agents-cli` version `1.1.0`
 
 ## Project Structure
