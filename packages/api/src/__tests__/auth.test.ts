@@ -30,6 +30,12 @@ async function buildTestServer(auth: TestAuthPair): Promise<FastifyInstance> {
     publicPaths: ['/healthz'],
   });
 
+  // Public health check — must mirror index.ts, which registers this route.
+  // The publicPaths bypass matches on the *resolved* route pattern
+  // (request.routeOptions.url), so the route has to exist for the bypass to
+  // apply. See the '/healthz is reachable without a token' test.
+  app.get('/healthz', async () => ({ ok: true }));
+
   // A protected route that echoes what the auth plugin injected into request.
   app.get('/me', async (request) => ({
     tenantId:    request.tenantId,
@@ -77,9 +83,26 @@ beforeAll(async () => {
 
 describe('public paths', () => {
   it('/healthz is reachable without a token', async () => {
-    // Fastify returns 404 for unregistered routes, but no auth error
     const res = await app.inject({ method: 'GET', url: '/healthz' });
     expect(res.statusCode).not.toBe(401);
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('an unregistered path is rejected with 401, not 404', async () => {
+    // The bypass matches on the resolved route pattern, so an unmatched route
+    // has no routeOptions.url and can never be public. Unauthenticated callers
+    // get 401 for anything that is not an explicitly registered public path —
+    // including paths that do not exist. This is deliberate: 404-vs-401 would
+    // leak which routes exist to callers with no token.
+    const res = await app.inject({ method: 'GET', url: '/not-a-real-route' });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('a public path is not bypassed by query-string manipulation', async () => {
+    // Matching on the route pattern rather than the raw URL means a crafted
+    // query string cannot smuggle a protected path past the check.
+    const res = await app.inject({ method: 'GET', url: '/me?next=/healthz' });
+    expect(res.statusCode).toBe(401);
   });
 });
 
