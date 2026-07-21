@@ -392,11 +392,22 @@ const PATCHES: Partial<Record<string, Partial<LicenseRecord>>> = {
     board: 'State Medical Board of Ohio',
     boardUrl: 'https://med.ohio.gov',
     lastChecked: '2026-07-15',
+    // NOTE: this record is deliberately self-conflicting. It is the fixture for
+    // eval case R-AMBIG-01 (docs/DESIGN_SPEC.md §9.4). Sentence 1 says a compact
+    // privilege is sufficient without an Ohio license; sentence 2 says a full
+    // unrestricted Ohio license is required before the first encounter. Both
+    // cannot be acted on, and "within a reasonable period" has no actionable
+    // threshold. The `notes` field below is intentionally free of any ambiguity
+    // flag — the agent must catch this from the language alone.
     telehealthNotes:
-      'OH participates in IMLC — compact privilege is valid for telehealth. ' +
-      'No separate telehealth registration required for OH-licensed physicians. ' +
+      'OH participates in IMLC — physicians holding an active compact privilege may ' +
+      'deliver telehealth services to patients located in Ohio without a separate ' +
+      'Ohio license. Physicians providing telehealth services to patients located in ' +
+      'Ohio must hold a full unrestricted Ohio medical license issued by the State ' +
+      'Medical Board of Ohio prior to the first patient encounter. ' +
       'HB 122 (2021) created permanent telehealth authorization. ' +
-      'Prescribing via telehealth requires an appropriate physician–patient relationship. ' +
+      'Telemedicine registration should be completed within a reasonable period ' +
+      'before care begins. ' +
       'Schedule II controlled substances require an in-person exam unless a DEA or ' +
       'state exception applies; OH PDMP check required before dispensing/prescribing.',
     notes:
