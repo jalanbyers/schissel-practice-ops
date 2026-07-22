@@ -2,7 +2,16 @@ import { auth0 } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const USE_MOCK = process.env['NEXT_PUBLIC_USE_MOCK'] === 'true';
+/**
+ * Mock mode bypasses authentication entirely, so it is pinned to
+ * non-production builds. Without the NODE_ENV guard, a stray
+ * NEXT_PUBLIC_USE_MOCK=true in a deployment would silently disable auth on
+ * every route — the variable is NEXT_PUBLIC_, so it is trivially settable and
+ * visible to the client.
+ */
+const USE_MOCK =
+  process.env['NEXT_PUBLIC_USE_MOCK'] === 'true' &&
+  process.env.NODE_ENV !== 'production';
 
 /**
  * Detect APP_BASE_URL pointing at a different origin than the one actually
