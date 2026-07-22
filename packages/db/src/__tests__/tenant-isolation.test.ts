@@ -31,6 +31,12 @@ import {
   insertEngagement,
 } from '../queries/engagements.js';
 import {
+  getDraftsByTenant,
+  getDraftsByContract,
+  getDraftById,
+  insertDrafts,
+} from '../queries/licensure_drafts.js';
+import {
   getChecklistByTenant,
   getChecklistTaskById,
   insertChecklistTask,
@@ -62,6 +68,7 @@ let payerId: string;
 let engagementId: string;
 let taskId: string;
 let ledgerEntryId: string;
+let draftId: string;
 
 beforeAll(async () => {
   // Use PGlite (in-process Postgres 16) — no Docker required.
@@ -73,6 +80,12 @@ beforeAll(async () => {
   payerId = await insertPayer(db, TENANT_B, { name: 'Medicare (CMS)', type: 'Government', status: 'approved' });
   engagementId = await insertEngagement(db, TENANT_B, { name: 'Teladoc Health', model: 'Async visits', status: 'active' });
   taskId = await insertChecklistTask(db, TENANT_B, { task: 'HIPAA risk assessment', group: 'HIPAA', status: 'progress' });
+  [draftId] = await insertDrafts(db, TENANT_B, [{
+    contractId: 'SYN-CONTRACT-1001',
+    state: 'OH',
+    plannedCareDate: '2026-10-01',
+    payload: { state: 'OH', status: 'human_review_required' },
+  }]) as [string];
   ledgerEntryId = await insertLedgerEntry(db, TENANT_B, { date: '2026-06-01', type: 'income', category: 'Clinical', source: 'Teladoc', amount: '4800' });
   await upsertSettings(db, TENANT_B, { name: 'Schissel Medicine', entity: 'Schissel Medicine, PLLC' });
 });
@@ -207,5 +220,45 @@ describe('settings — tenant isolation', () => {
     await upsertSettings(db, TENANT_A, { name: 'Impersonator Practice' });
     const rowB = await getSettings(db, TENANT_B);
     expect(rowB?.name).toBe('Schissel Medicine');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Licensure drafts — physician review decisions, so cross-tenant leakage here
+// would expose one practice's licensure posture to another.
+// ---------------------------------------------------------------------------
+
+describe('licensure drafts — tenant isolation', () => {
+  it('listing returns nothing for a tenant with no drafts', async () => {
+    const rows = await getDraftsByTenant(db, TENANT_A);
+    expect(rows).toHaveLength(0);
+  });
+
+  it('listing by contract does not cross tenants', async () => {
+    const rows = await getDraftsByContract(db, TENANT_A, 'SYN-CONTRACT-1001');
+    expect(rows).toHaveLength(0);
+  });
+
+  it("fetching another tenant's draft by id fails as not-found", async () => {
+    await expect(getDraftById(db, TENANT_A, draftId)).rejects.toThrow(NotFoundError);
+  });
+
+  it('the owning tenant can read its own draft', async () => {
+    const row = await getDraftById(db, TENANT_B, draftId);
+    expect(row.state).toBe('OH');
+    expect(row.tenantId).toBe(TENANT_B);
+  });
+
+  it('inserted drafts are always pending — approval cannot be set on insert', async () => {
+    const [id] = await insertDrafts(db, TENANT_B, [{
+      contractId: 'SYN-CONTRACT-2002',
+      state: 'CA',
+      plannedCareDate: '2026-10-01',
+      // A caller trying to smuggle an approved status past the gate.
+      approvalStatus: 'approved',
+      payload: { state: 'CA', status: 'license_current' },
+    } as never]);
+    const row = await getDraftById(db, TENANT_B, id!);
+    expect(row.approvalStatus).toBe('pending');
   });
 });
