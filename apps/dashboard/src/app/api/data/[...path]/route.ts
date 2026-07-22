@@ -17,9 +17,19 @@ const API_BASE = process.env['API_INTERNAL_URL'] ?? 'http://localhost:3001';
 
 type Ctx = { params: Promise<{ path: string[] }> };
 
+/**
+ * Anonymous demo mode — see middleware.ts and packages/api/src/plugins/auth.ts.
+ *
+ * With no Auth0 session there is no access token to forward, and
+ * `auth0.getAccessToken()` throws. The API applies its own matching guard
+ * (NODE_ENV plus an explicit DEMO_TENANT_ID) and supplies a fixed identity, so
+ * the Authorization header is simply omitted rather than faked here.
+ */
+const ALLOW_ANONYMOUS = process.env['DEMO_ALLOW_ANONYMOUS'] === 'true';
+
 async function proxy(request: NextRequest, method: string, ctx: Ctx) {
   const { path } = await ctx.params;
-  const { token } = await auth0.getAccessToken();
+  const token = ALLOW_ANONYMOUS ? null : (await auth0.getAccessToken()).token;
 
   const apiPath = path.join('/');
   const search   = request.nextUrl.search;
@@ -28,7 +38,8 @@ async function proxy(request: NextRequest, method: string, ctx: Ctx) {
   const isBodyMethod = method === 'POST' || method === 'PATCH' || method === 'PUT';
   const body = isBodyMethod ? await request.text() : undefined;
 
-  const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
   if (isBodyMethod) headers['Content-Type'] = 'application/json';
 
   const res = await fetch(url, { method, headers, body });

@@ -60,8 +60,41 @@ export interface AuthPluginOptions {
 // Fastify 5 requires getter+setter for reference types; the WeakMap is the store.
 const _rolesStore = new WeakMap<object, string[]>();
 
+/**
+ * Local demo identity — a deliberate, tightly-fenced auth bypass.
+ *
+ * The capstone demo runs the whole stack on one machine against synthetic
+ * data. Configuring an Auth0 Action to issue tenant/role claims and enrolling
+ * MFA is setup work that proves nothing about the agent, and an MFA prompt
+ * between recording takes is its own tax. When enabled, every request is
+ * treated as a fixed tenant with owner role and MFA satisfied.
+ *
+ * TWO independent conditions, both required:
+ *
+ *   1. NODE_ENV must not be 'production'. fly.toml sets NODE_ENV=production on
+ *      the deployed API, so this cannot activate there even if the variable
+ *      were copied across by mistake.
+ *   2. DEMO_TENANT_ID must be explicitly set. There is no default, so
+ *      forgetting to set it fails closed to normal JWT verification.
+ *
+ * Neither alone is sufficient. If this appears in a stack trace from a real
+ * environment, the fix is to unset DEMO_TENANT_ID — not to widen the guard.
+ */
+const DEMO_TENANT_ID = process.env['DEMO_TENANT_ID'];
+const DEMO_IDENTITY_ENABLED =
+  process.env.NODE_ENV !== 'production' && !!DEMO_TENANT_ID;
+
 const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (fastify, opts) => {
   const { verifier, publicPaths = ['/healthz'] } = opts;
+
+  if (DEMO_IDENTITY_ENABLED) {
+    // Loud on purpose. An auth bypass should never be quiet about existing.
+    fastify.log.warn(
+      { tenantId: DEMO_TENANT_ID },
+      'DEMO IDENTITY ACTIVE — every request is treated as an authenticated ' +
+        'owner with MFA. Local development only. Unset DEMO_TENANT_ID to disable.',
+    );
+  }
 
   fastify.decorateRequest('tenantId',    '');
   fastify.decorateRequest('userId',      '');
@@ -73,6 +106,14 @@ const authPlugin: FastifyPluginAsync<AuthPluginOptions> = async (fastify, opts) 
 
   fastify.addHook('onRequest', async (request, reply) => {
     if (publicPaths.includes(request.routeOptions?.url ?? '')) return;
+
+    if (DEMO_IDENTITY_ENABLED) {
+      request.tenantId    = DEMO_TENANT_ID!;
+      request.userId      = 'demo-physician';
+      request.userRoles   = ['owner'];
+      request.mfaVerified = true;
+      return;
+    }
 
     const authHeader = request.headers['authorization'];
     if (typeof authHeader !== 'string' || !authHeader.startsWith('Bearer ')) {
