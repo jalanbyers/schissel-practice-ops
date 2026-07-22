@@ -522,10 +522,15 @@ root_agent = Agent(
         # Pinned, not floating. `gemini-flash-latest` would let the model shift
         # under the eval suite, making a prompt regression indistinguishable
         # from a model change. R-AMBIG-01 measures prompt quality, so the model
-        # must hold still. Pro was ruled out empirically: gemini-3.1-pro-preview
-        # and gemini-2.5-pro both return 429 RESOURCE_EXHAUSTED on the free
-        # API-key tier. See docs/DESIGN_SPEC.md §11.
-        model="gemini-3.6-flash",
+        # must hold still. See docs/DESIGN_SPEC.md §11.
+        #
+        # Why 3.5 and not 3.6: free-tier quotas are per-model, and
+        # gemini-3.6-flash carries an unusually tight 20 requests/day that a
+        # single suite run exhausts. 3.5-flash is also stable and has its own
+        # allowance. Pro was ruled out empirically — gemini-3.1-pro-preview and
+        # gemini-2.5-pro both 429 on the free tier, and Pro models were removed
+        # from that tier in April 2026.
+        model="gemini-3.5-flash",
         retry_options=types.HttpRetryOptions(attempts=3),
     ),
     instruction=INSTRUCTION,
