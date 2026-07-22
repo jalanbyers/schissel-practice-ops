@@ -840,3 +840,13 @@ select.input {
 .empty-mini.error { color: var(--bad, var(--warn)); font-style: normal; }
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* Decided drafts — visually distinct from pending so a reviewed state is never
+   mistaken for one still awaiting sign-off. */
+.draft-card.decided.approved  { border-left-color: var(--ok); }
+.draft-card.decided.rejected  { border-left-color: var(--ink-3); opacity: .72; }
+.draft-card.decided.escalated { border-left-color: var(--info); }
+
+.draft-actions { border-top: 1px solid var(--line); padding-top: 11px; margin-top: 11px; }
+.draft-action-row { display: flex; flex-wrap: wrap; gap: 7px; margin: 7px 0; }
+.draft-actions .input { margin-bottom: 4px; }

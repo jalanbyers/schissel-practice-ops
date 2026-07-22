@@ -1,6 +1,6 @@
 import { and, desc, eq } from 'drizzle-orm';
 import { licensureDrafts } from '../schema/licensure_drafts.js';
-import { NotFoundError } from '../errors.js';
+import { AlreadyReviewedError, NotFoundError } from '../errors.js';
 import type { DrizzleDb } from '../client.js';
 import type { NewLicensureDraft } from '../schema/licensure_drafts.js';
 
@@ -91,4 +91,64 @@ export async function replacePendingDraftsForContract(
         eq(licensureDrafts.approvalStatus, 'pending'),
       ),
     );
+}
+
+export type ReviewDecision = 'approve' | 'edit' | 'reject' | 'escalate';
+
+const DECISION_TO_STATUS: Record<ReviewDecision, 'approved' | 'rejected' | 'escalated'> = {
+  approve:  'approved',
+  // An edit is an approval of physician-corrected content. It lands in the same
+  // state, but the audit trail distinguishes them — see reviewDraft.
+  edit:     'approved',
+  reject:   'rejected',
+  escalate: 'escalated',
+};
+
+/**
+ * Record a physician's decision on a draft.
+ *
+ * Only a pending draft can be decided. Re-deciding an already-reviewed draft
+ * fails rather than silently overwriting, so a second reviewer cannot quietly
+ * flip an approval and an accidental double-submit cannot rewrite history.
+ *
+ * `editedPayload` is stored verbatim when supplied. Physician edits are NOT
+ * validated against the agent's boundaries: the agent is constrained from
+ * claiming a physician is authorized to practice, but a physician correcting
+ * their own record is exercising the judgment this whole design defers to them.
+ * The audit entry records that the content changed and who changed it.
+ */
+export async function reviewDraft(
+  db: DrizzleDb,
+  tenantId: string,
+  draftId: string,
+  input: {
+    decision: ReviewDecision;
+    reviewedBy: string;
+    note?: string | null;
+    editedPayload?: Record<string, unknown> | null;
+  },
+) {
+  const current = await getDraftById(db, tenantId, draftId);
+  if (current.approvalStatus !== 'pending') {
+    throw new AlreadyReviewedError(
+      `Draft was already ${current.approvalStatus} and cannot be reviewed again`,
+    );
+  }
+
+  const rows = await db
+    .update(licensureDrafts)
+    .set({
+      approvalStatus: DECISION_TO_STATUS[input.decision],
+      reviewNote: input.note ?? null,
+      reviewedBy: input.reviewedBy,
+      reviewedAt: new Date(),
+      updatedAt: new Date(),
+      ...(input.editedPayload ? { payload: input.editedPayload } : {}),
+    })
+    .where(
+      and(eq(licensureDrafts.tenantId, tenantId), eq(licensureDrafts.id, draftId)),
+    )
+    .returning();
+
+  return { previous: current, updated: rows[0]! };
 }
