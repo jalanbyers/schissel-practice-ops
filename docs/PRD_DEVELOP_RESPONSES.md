@@ -32,7 +32,7 @@ For an escalated state the card also shows the conflicting requirement text with
 
 Where the agent has declined to adopt a status the physician asked for, the card shows what was requested, what the records actually say, and why.
 
-In this slice the physician reviews drafts but cannot yet approve, edit, reject, or escalate them from the interface. That is the next slice and it is the honest gap in the loop today.
+Each card carries four actions: approve, edit, reject, and escalate. Rejecting or escalating asks for a short note first, because a decision to override or defer the agent is the one worth being able to explain later; approving does not, since the draft already carries its own reasoning. A decided card changes colour, shows what was decided, and loses its action buttons — a draft can only be decided once, so a second click cannot quietly flip an approval. Every decision is written to the audit log, and an edit records both what the agent said and what the physician recorded instead.
 
 ---
 
@@ -113,7 +113,7 @@ Beyond the six cases, 113 unit tests cover the guarantees the eval cannot prove 
 ## Constraints · Known limitations · What it cannot do yet
 **What does the prototype not do yet? Be honest and specific.**
 
-**There is no approval workflow.** Drafts are produced and stored, and the agent genuinely cannot publish — but the physician cannot yet approve, edit, reject, or escalate one from the interface, and nothing consumes an approved draft. The approval gate is real in the direction that matters for safety and incomplete as a workflow.
+**Approval records a decision but does not update the license records.** The physician can approve, edit, reject, or escalate each draft, gated on role and a verified second factor, and every decision is written to the audit log. What approval does not do is change the underlying license record. The agent's statuses do not map cleanly onto a license record's — "human review required" has no equivalent at all — and letting agent output rewrite license data would hand it the authority the whole design withholds. So an approved draft is a recorded sign-off on an assessment, not a change to the physician's licensure. I think that is the right boundary, but it means the dashboard still shows license status and licensure assessment as two separate things rather than one reconciled view.
 
 **There is no contract-level summary.** The PRD's output format specifies counts by status, the earliest relevant deadline, and the number of states needing review. The prototype produces per-state results only.
 

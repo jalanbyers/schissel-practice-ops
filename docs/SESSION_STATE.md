@@ -30,7 +30,7 @@ This is implemented and passing as eval case **R-AMBIG-01**. It is the single mo
 
 1. **Paste the eight DEVELOP answers** from `docs/PRD_DEVELOP_RESPONSES.md` into the sheet's Student Response cells.
 2. **Read them in Alan's voice first** — they are written first person and should sound like him.
-3. **Update one claim before submitting.** The Known-limitations row says *"there is no approval workflow."* PR #12 adds it. If #12 is merged, that sentence is wrong.
+3. ~~Update the approval-workflow claim.~~ **Done** — the Known-limitations and User-interaction rows now describe the workflow as built.
 4. **The Demo row describes a live local run.** Verify it by actually running the full stack (below) before recording.
 5. DEPLOY and FINAL rows are untouched.
 
@@ -40,16 +40,16 @@ This is implemented and passing as eval case **R-AMBIG-01**. It is the single mo
 
 `jalanbyers/schissel-practice-ops`, default branch `main`.
 
-**Merged this session:** #1 agent + design spec + `lastChecked` migration · #2 `/healthz` test · #3 flaky token test · #4 all six eval cases · #5 Auth0 misconfiguration diagnosable · #6 spec refresh + `output_examples.json` · #7 runtime output filter · #9 portal slice 1 · #10 local dev + auth-flag split · #11 PRD develop responses.
+**Merged this session:** #1 agent + design spec + `lastChecked` migration · #2 `/healthz` test · #3 flaky token test · #4 all six eval cases · #5 Auth0 misconfiguration diagnosable · #6 spec refresh + `output_examples.json` · #7 runtime output filter · #9 portal slice 1 · #10 local dev + auth-flag split · #11 PRD develop responses · #12 portal slice 2 approval workflow.
 
-**Open:** **#12** — portal slice 2, physician approve / edit / reject / escalate. Branch `feat/portal-slice-2-approval`. All checks were passing at time of writing.
+**Open:** none. #12 (portal slice 2 — physician approve / edit / reject / escalate) is merged.
 
 (#8 was auto-closed by GitHub when its base branch was deleted; #9 replaces it.)
 
 ### Test counts on `main`
 
 ```
-packages/db          22 passed      (28 on the #12 branch — 6 new gate tests)
+packages/db          28 passed
 packages/api         21 passed
 licensure-agent     113 passed      (unit)
 eval                  6/6 cases passing
@@ -138,7 +138,9 @@ Also tracked in `DESIGN_SPEC.md` §11.
 4. **Managed eval metrics disabled.** The scaffold's LLM-as-judge builds `genai.Client()` with no args, resolves to ADC/Vertex rather than the API key, and hangs. Enabling `aiplatform.googleapis.com` would restore it — useful for judging explanation *quality*, which deterministic checks cannot.
 5. **Three PRD data artifacts consolidated rather than built** — `contract_states.csv`, `physician_licenses.csv`, `licensure_agent_policy.md`. Defensible for a six-state prototype; a reviewer may look for them.
 6. **Live agent output on the deployed portal is blocked** by an auth conflict: the BFF proxy calls `auth0.getAccessToken()` and Fastify requires a tenant claim, so anonymous demo mode and the real API path are mutually exclusive. Deployment stays pure-mock; the demo runs locally.
-7. **Slice 2's API path is unit-tested only.** The browser run used mocks, so the real `PATCH` with the MFA gate has not been exercised end-to-end.
+7. **Slice 2's API path is unit-tested only.** The browser run used mocks, so the real `PATCH` with the MFA gate has not been exercised end-to-end. This is the main thing a full-stack local run would prove.
+
+8. **License records and licensure assessments are two separate views.** Approving a draft records a sign-off; it does not update the physician's license record, deliberately. Reconciling them into one view is unbuilt and would need a decision about what agent output is allowed to change.
 
 ---
 
@@ -168,7 +170,6 @@ That gives full context in two files. `DESIGN_SPEC.md` §11 and section 5 above 
 
 **Immediate next steps, in the order I'd take them:**
 
-1. **Merge #12** (or review it first) — it closes the approval gate.
-2. **Full-stack local run** — verifies slice 2's real API path and is the same run needed for the demo recording.
-3. **Paste the DEVELOP answers** into the PRD sheet, correcting the approval-workflow sentence if #12 has merged.
-4. Then pick from the open items — the contract-level summary is the most demo-visible; wiring `output_examples.json` into the prompt is the most faithful to the PRD.
+1. **Full-stack local run** — verifies slice 2's real `PATCH` path (currently unit-tested only) and is the same run needed for the demo recording.
+2. **Paste the DEVELOP answers** into the PRD sheet. They are current as of the slice-2 merge; read them in Alan's voice first.
+3. Then pick from the open items — the contract-level summary is the most demo-visible; wiring `output_examples.json` into the prompt is the most faithful to the PRD.
