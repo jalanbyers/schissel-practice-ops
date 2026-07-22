@@ -31,7 +31,7 @@ This is implemented and passing as eval case **R-AMBIG-01**. It is the single mo
 1. **Paste the eight DEVELOP answers** from `docs/PRD_DEVELOP_RESPONSES.md` into the sheet's Student Response cells.
 2. **Read them in Alan's voice first** — they are written first person and should sound like him.
 3. ~~Update the approval-workflow claim.~~ **Done** — the Known-limitations and User-interaction rows now describe the workflow as built.
-4. **The Demo row describes a live local run.** Verify it by actually running the full stack (below) before recording.
+4. ~~Verify the Demo row against a real full-stack run.~~ **Done** — see §6. Add one sentence noting the demo used the local demo identity rather than production auth; that is the only claim this changes.
 5. DEPLOY and FINAL rows are untouched.
 
 ---
@@ -40,9 +40,9 @@ This is implemented and passing as eval case **R-AMBIG-01**. It is the single mo
 
 `jalanbyers/schissel-practice-ops`, default branch `main`.
 
-**Merged this session:** #1 agent + design spec + `lastChecked` migration · #2 `/healthz` test · #3 flaky token test · #4 all six eval cases · #5 Auth0 misconfiguration diagnosable · #6 spec refresh + `output_examples.json` · #7 runtime output filter · #9 portal slice 1 · #10 local dev + auth-flag split · #11 PRD develop responses · #12 portal slice 2 approval workflow.
+**Merged:** #1 agent + design spec + `lastChecked` migration · #2 `/healthz` test · #3 flaky token test · #4 all six eval cases · #5 Auth0 misconfiguration diagnosable · #6 spec refresh + `output_examples.json` · #7 runtime output filter · #9 portal slice 1 · #10 local dev + auth-flag split · #11 PRD develop responses · #12 portal slice 2 approval workflow · #13 post-slice-2 doc refresh · #14 local demo identity.
 
-**Open:** none. #12 (portal slice 2 — physician approve / edit / reject / escalate) is merged.
+**Open:** none. Everything through #14 is merged.
 
 (#8 was auto-closed by GitHub when its base branch was deleted; #9 replaces it.)
 
@@ -50,7 +50,7 @@ This is implemented and passing as eval case **R-AMBIG-01**. It is the single mo
 
 ```
 packages/db          28 passed
-packages/api         21 passed
+packages/api         28 passed
 licensure-agent     113 passed      (unit)
 eval                  6/6 cases passing
 ```
@@ -102,17 +102,44 @@ Open any engagement → Onboarding requirements → Licensure review. Three fixt
 
 `NEXT_PUBLIC_USE_MOCK` controls **data mocking only**. `DEMO_ALLOW_ANONYMOUS` is server-only and controls the **auth bypass** — they were deliberately split so a client-visible flag can never disable authentication.
 
-### Full stack — live agent, needed for the demo recording
+### Full stack — live agent, verified working
+
+**Postgres is already running via Homebrew** (`postgresql@16`) and `DATABASE_URL` in the root `.env` points at it. **Docker is not installed and is not needed** — ignore the `docker compose` line in `docs/deploy.md`.
+
+Three terminals from the repo root:
 
 ```bash
-docker compose up -d postgres
-pnpm --filter @schissel/db migrate
-cd packages/licensure-agent && uv run uvicorn app.local_server:app --port 8080
-pnpm --filter @schissel/api dev
-pnpm --filter @schissel/dashboard dev            # real Auth0 login, NOT DEMO_ALLOW_ANONYMOUS
+# 1 · agent
+cd packages/licensure-agent
+uv run --with fastapi --with uvicorn uvicorn app.local_server:app --port 8080
+
+# 2 · API — DEMO_TENANT_ID activates the local demo identity
+set -a; . ./.env; set +a
+export DEMO_TENANT_ID=tenant-schissel
+npx pnpm@9 --filter @schissel/api dev            # look for "DEMO IDENTITY ACTIVE"
+
+# 3 · dashboard — PORT override is required
+set -a; . ./.env; set +a
+export PORT=3000 API_INTERNAL_URL=http://localhost:3001 DEMO_ALLOW_ANONYMOUS=true
+npx pnpm@9 --filter @schissel/dashboard dev
 ```
 
+Three traps, all hit at least once:
+
+- **The API has no dotenv.** It expects env injected by docker-compose, so `pnpm --filter @schissel/api dev` alone fails with *"Missing required environment variable: AUTH0_DOMAIN"*. Source `.env` first.
+- **The root `.env` sets `PORT=3001`.** Exporting it makes Next bind the dashboard to 3001 and collide with the API. Override `PORT=3000`.
+- **`NEXT_PUBLIC_*` values are compiled into the client bundle.** After changing `NEXT_PUBLIC_USE_MOCK`, delete `apps/dashboard/.next` or the browser keeps the old value.
+
 Requires `GEMINI_API_KEY` in `packages/licensure-agent/.env` (billing is enabled on the AI Studio key).
+
+**Demo identity.** This Auth0 tenant issues no `tenant_id` or `roles` claim and has no MFA enrolled, so the API would 401 every call and the approval route would 403. `DEMO_TENANT_ID` makes the API treat every request as a fixed tenant with owner role and MFA satisfied. It is guarded by *both* `NODE_ENV !== 'production'` and the variable being explicitly set — see `packages/api/src/plugins/auth.ts`. A demo run this way does **not** exercise production's auth path, which is worth one sentence in the PRD.
+
+**Seeded demo data** lives under tenant `tenant-schissel` — three engagements, with live drafts on Teladoc Health. To reseed:
+
+```sql
+INSERT INTO engagements (tenant_id, name, model, status)
+VALUES ('tenant-schissel', 'Teladoc Health', 'Async visits', 'active');
+```
 
 ### Tests and evals
 
@@ -138,13 +165,36 @@ Also tracked in `DESIGN_SPEC.md` §11.
 4. **Managed eval metrics disabled.** The scaffold's LLM-as-judge builds `genai.Client()` with no args, resolves to ADC/Vertex rather than the API key, and hangs. Enabling `aiplatform.googleapis.com` would restore it — useful for judging explanation *quality*, which deterministic checks cannot.
 5. **Three PRD data artifacts consolidated rather than built** — `contract_states.csv`, `physician_licenses.csv`, `licensure_agent_policy.md`. Defensible for a six-state prototype; a reviewer may look for them.
 6. **Live agent output on the deployed portal is blocked** by an auth conflict: the BFF proxy calls `auth0.getAccessToken()` and Fastify requires a tenant claim, so anonymous demo mode and the real API path are mutually exclusive. Deployment stays pure-mock; the demo runs locally.
-7. **Slice 2's API path is unit-tested only.** The browser run used mocks, so the real `PATCH` with the MFA gate has not been exercised end-to-end. This is the main thing a full-stack local run would prove.
+7. ~~Slice 2's API path is unit-tested only.~~ **Closed.** Verified end-to-end against the running stack — see §6 below.
 
 8. **License records and licensure assessments are two separate views.** Approving a draft records a sign-off; it does not update the physician's license record, deliberately. Reconciling them into one view is unbuilt and would need a decision about what agent output is allowed to change.
 
+9. **Auth0 is not fully configured on this tenant.** No Action issues the `tenant_id` or `roles` claims, and MFA is not enrolled, so `amr` never contains `mfa`. The API needs all three. Local work uses the demo identity instead. Configuring it is a real prerequisite for anything beyond a local demo, and belongs in the PRD's DEPLOY row.
+
+10. **No database seed script.** The `seed-*.ts` files feed mock mode only; there is no path that populates Postgres. Demo rows were inserted by hand under `tenant-schissel`.
+
 ---
 
-## 6 · Things learned the hard way
+## 6 · Full-stack run — verified 2026-07-22
+
+The end-to-end path, against real services rather than fixtures:
+
+```
+POST /v1/licensure/analyze   → 3 drafts from 4 states (Ohio/OH deduped)
+   OH  human_review_required   pending
+   CA  license_current         pending
+   FL  renewal_needed          pending   urgency=urgent
+
+PATCH /drafts/{id} approve   → approved, reviewedBy + reviewedAt set
+PATCH same draft again       → 409  (a decided draft cannot be re-decided)
+audit_log                    → licensure.approve | CA: approve (license_current)
+```
+
+Live Gemini calls, Fastify with role and MFA gates satisfied, Postgres persistence, real audit trail. Ohio escalated on condition 4 through the live agent — not fixtures. The 409 and the audit entry had only unit coverage before this; both hold against the real API.
+
+---
+
+## 7 · Things learned the hard way
 
 Worth knowing before changing anything here.
 
@@ -160,7 +210,7 @@ Worth knowing before changing anything here.
 
 ---
 
-## 7 · Picking up in a new session
+## 8 · Picking up in a new session
 
 Open a session with the repo root as the working directory and start with something like:
 
@@ -170,6 +220,8 @@ That gives full context in two files. `DESIGN_SPEC.md` §11 and section 5 above 
 
 **Immediate next steps, in the order I'd take them:**
 
-1. **Full-stack local run** — verifies slice 2's real `PATCH` path (currently unit-tested only) and is the same run needed for the demo recording.
-2. **Paste the DEVELOP answers** into the PRD sheet. They are current as of the slice-2 merge; read them in Alan's voice first.
-3. Then pick from the open items — the contract-level summary is the most demo-visible; wiring `output_examples.json` into the prompt is the most faithful to the PRD.
+1. **Record the demo.** The stack is verified (§6) and the flow that reads best is: pick contract states including a duplicate → set the care date → Analyze → open Ohio to show conditions 1–3 passing and condition 4 failing with the contradictory sentences highlighted → Florida for the urgent timing → approve one to show the gate closing.
+2. **Paste the DEVELOP answers** into the PRD sheet. Current as of #14; read them in Alan's voice first, and add the one sentence about the demo identity.
+3. Then pick from the open items — the contract-level summary is the most demo-visible; wiring `output_examples.json` into the prompt is the most faithful to the PRD; a database seed script (#10) would remove the hand-inserted rows.
+
+**If the demo needs re-running**, everything in §4 is verified working as written. The three traps listed there each cost time once already.
