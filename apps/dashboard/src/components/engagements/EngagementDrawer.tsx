@@ -6,6 +6,7 @@ import { StatusPill, ENG_STATUS } from '@/components/ui/StatusPill';
 import { uid } from '@/lib/date-helpers';
 import { ENG_STATUS_OPTS, ENG_MODELS } from '@/lib/types';
 import type { EngagementRecord, Requirement, LicenseDoc } from '@/lib/types';
+import { LicensureAnalysis } from './LicensureAnalysis';
 
 interface EngagementDrawerProps {
   engagement: EngagementRecord | null;
@@ -194,6 +195,9 @@ export function EngagementDrawer({ engagement, onSave, onDelete, onClose }: Enga
               </div>
             ))}
           </div>
+
+          {/* Licensure review — agent drafts for this contract's required states */}
+          <LicensureAnalysis contractId={draft.id} saved={!isNew} />
 
           {/* Reference documents */}
           <div className="dgroup">
