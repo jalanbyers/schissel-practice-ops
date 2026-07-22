@@ -4,8 +4,35 @@
     {
       "name": "dashboard",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["--yes", "pnpm@9", "--filter", "@schissel/dashboard", "dev"],
-      "port": 3000
+      "runtimeArgs": [
+        "--yes",
+        "pnpm@9",
+        "--filter",
+        "@schissel/dashboard",
+        "dev"
+      ],
+      "port": 3000,
+      "autoPort": false
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "set -a && . ./.env && set +a && exec npx --yes pnpm@9 --filter @schissel/api dev"
+      ],
+      "port": 3001,
+      "autoPort": false
+    },
+    {
+      "name": "licensure-agent",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "cd packages/licensure-agent && exec uv run uvicorn app.local_server:app --port 8080"
+      ],
+      "port": 8080,
+      "autoPort": false
     }
   ]
 }
