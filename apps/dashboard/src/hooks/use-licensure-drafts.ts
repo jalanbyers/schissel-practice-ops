@@ -1,6 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { clientJson } from '@/lib/client-fetch';
 
+/**
+ * Mock mode matches the rest of the dashboard's hooks. Without it this feature
+ * needs Postgres, the Fastify API and a running agent before anything renders,
+ * which makes it undemoable — and the section silently shows nothing rather
+ * than explaining why.
+ */
+const USE_MOCK = process.env['NEXT_PUBLIC_USE_MOCK'] === 'true';
+
 /** One clarity condition verdict as the agent reported it. */
 export interface ClarityCheck {
   condition_number: number;
@@ -57,10 +65,15 @@ export const licensureDraftsKey = (contractId: string) =>
 export function useLicensureDrafts(contractId: string, enabled: boolean) {
   return useQuery<LicensureDraft[]>({
     queryKey: licensureDraftsKey(contractId),
-    queryFn: () =>
-      clientJson<LicensureDraft[]>(
-        `/licensure/drafts?contractId=${encodeURIComponent(contractId)}`,
-      ),
+    queryFn: USE_MOCK
+      ? async () => {
+          const { mockLicensureDrafts } = await import('@/lib/mock-licensure-drafts');
+          return mockLicensureDrafts(contractId);
+        }
+      : () =>
+          clientJson<LicensureDraft[]>(
+            `/licensure/drafts?contractId=${encodeURIComponent(contractId)}`,
+          ),
     enabled: enabled && !!contractId,
   });
 }
@@ -68,7 +81,13 @@ export function useLicensureDrafts(contractId: string, enabled: boolean) {
 export function useRunLicensureAnalysis(contractId: string) {
   const queryClient = useQueryClient();
   return useMutation<AnalyzeResult, Error, { states: string[]; plannedCareDate: string }>({
-    mutationFn: (vars) =>
+    mutationFn: USE_MOCK
+      ? async () => {
+          // Mimic the agent's latency so the pending state is visible.
+          await new Promise((r) => setTimeout(r, 900));
+          return { contractId, created: 3, failed: [] };
+        }
+      : (vars) =>
       clientJson<AnalyzeResult>('/licensure/analyze', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },

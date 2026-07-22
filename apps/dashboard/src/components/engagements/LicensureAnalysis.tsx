@@ -161,10 +161,21 @@ function DraftCard({ draft }: { draft: LicensureDraft }) {
   );
 }
 
+/**
+ * Mock mode has no persistence, so there is nothing to save against and no
+ * orphaned-draft risk — the save gate would only hide the feature.
+ */
+const USE_MOCK = process.env['NEXT_PUBLIC_USE_MOCK'] === 'true';
+
 interface Props {
   /** Engagement id, used as the contract identifier for drafts. */
   contractId: string;
-  /** New engagements have no id yet, so analysis is unavailable until saved. */
+  /**
+   * Whether the engagement exists yet. Drafts are keyed by contract id, and a
+   * new engagement's client-side id is discarded on save the way insertLicense
+   * strips client ids — so drafts created before saving would orphan against
+   * an id that never persists.
+   */
   saved: boolean;
 }
 
@@ -172,13 +183,16 @@ export function LicensureAnalysis({ contractId, saved }: Props) {
   const [states, setStates] = useState<string[]>([]);
   const [careDate, setCareDate] = useState('');
 
-  const { data: drafts, isLoading } = useLicensureDrafts(contractId, saved);
+  // In mock mode there is no persistence, so the save gate does not apply.
+  const ready = saved || USE_MOCK;
+
+  const { data: drafts, isLoading } = useLicensureDrafts(contractId, ready);
   const run = useRunLicensureAnalysis(contractId);
 
   const toggle = (code: string) =>
     setStates((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
 
-  const canRun = saved && states.length > 0 && !!careDate && !run.isPending;
+  const canRun = ready && states.length > 0 && !!careDate && !run.isPending;
 
   return (
     <div className="dgroup">
@@ -187,13 +201,13 @@ export function LicensureAnalysis({ contractId, saved }: Props) {
         {drafts?.length ? <span className="dgroup-meta">{drafts.length} drafts</span> : null}
       </div>
 
-      {!saved && (
+      {!ready && (
         <div className="empty-mini">
           Save this engagement first — analysis is stored against the contract.
         </div>
       )}
 
-      {saved && (
+      {ready && (
         <>
           <div className="field-grid">
             <div className="field">

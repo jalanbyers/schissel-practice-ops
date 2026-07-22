@@ -2,7 +2,20 @@ import { auth0 } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const USE_MOCK = process.env['NEXT_PUBLIC_USE_MOCK'] === 'true';
+/**
+ * Anonymous access — the demo deployment runs entirely on synthetic data with
+ * no Auth0 tenant behind it.
+ *
+ * Deliberately NOT keyed on NEXT_PUBLIC_USE_MOCK. That variable is
+ * client-visible and controls data mocking in the hooks; using it here meant a
+ * client-settable flag governed an auth bypass, and a stray value in any
+ * deployment would have returned NextResponse.next() for every route.
+ *
+ * DEMO_ALLOW_ANONYMOUS is server-only, so it cannot be set from the browser or
+ * leak into the client bundle, and enabling it is an explicit deployment
+ * decision rather than a side effect of turning on mock data.
+ */
+const ALLOW_ANONYMOUS = process.env['DEMO_ALLOW_ANONYMOUS'] === 'true';
 
 /**
  * Detect APP_BASE_URL pointing at a different origin than the one actually
@@ -64,7 +77,7 @@ export default function middleware(request: NextRequest) {
     }
   }
 
-  if (USE_MOCK && !request.nextUrl.pathname.startsWith('/api/auth')) {
+  if (ALLOW_ANONYMOUS && !request.nextUrl.pathname.startsWith('/api/auth')) {
     return NextResponse.next();
   }
   return auth0.middleware(request);
