@@ -1,12 +1,20 @@
 import type { FastifyPluginAsync } from 'fastify';
 import type { DrizzleDb } from '@schissel/db';
 import {
+  AlreadyReviewedError,
+  NotFoundError,
+  getDraftById,
   getDraftsByContract,
   getDraftsByTenant,
+  insertAuditEvent,
   insertDrafts,
   replacePendingDraftsForContract,
+  reviewDraft,
+  type ReviewDecision,
 } from '@schissel/db';
-import { requireRole } from '../plugins/rbac.js';
+import { requireMfa, requireRole } from '../plugins/rbac.js';
+
+const DECISIONS: ReviewDecision[] = ['approve', 'edit', 'reject', 'escalate'];
 
 /**
  * Licensure analyst routes.
@@ -121,5 +129,82 @@ export const licensureRoutes: FastifyPluginAsync<{ db: DrizzleDb }> = async (fas
     return contractId
       ? getDraftsByContract(db, request.tenantId, contractId)
       : getDraftsByTenant(db, request.tenantId);
+  });
+
+  /**
+   * Record a physician's decision on a draft — the approval gate.
+   *
+   * Gated on role AND MFA. This is the moment a machine-generated licensure
+   * assessment becomes something a physician has signed off on, which is the
+   * highest-consequence write in this feature.
+   *
+   * Deliberately there is still no path that lets the AGENT reach this. The
+   * decision requires an authenticated human with a verified second factor.
+   */
+  fastify.patch<{
+    Params: { id: string };
+    Body: { decision?: string; note?: string; payload?: Record<string, unknown> };
+  }>('/drafts/:id', {
+    preHandler: [requireRole('owner', 'admin'), requireMfa()],
+  }, async (request, reply) => {
+    const { decision, note, payload } = request.body ?? {};
+
+    if (!decision || !DECISIONS.includes(decision as ReviewDecision)) {
+      return reply.status(400).send({
+        error: `decision must be one of ${DECISIONS.join(', ')}`,
+      });
+    }
+    if (decision === 'edit' && (!payload || typeof payload !== 'object')) {
+      return reply.status(400).send({
+        error: 'an edit must include the corrected payload',
+      });
+    }
+
+    try {
+      const { previous, updated } = await reviewDraft(db, request.tenantId, request.params.id, {
+        decision: decision as ReviewDecision,
+        reviewedBy: request.userId,
+        note: note ?? null,
+        editedPayload: decision === 'edit' ? payload! : null,
+      });
+
+      // Audit the decision, not just the outcome. An edit that changes the
+      // status is the one case where the record no longer says what the agent
+      // said, so the label records both sides.
+      const before = String((previous.payload as Record<string, unknown>)?.['status'] ?? 'unknown');
+      const after = String((updated.payload as Record<string, unknown>)?.['status'] ?? 'unknown');
+      const label =
+        decision === 'edit' && before !== after
+          ? `${updated.state}: approved with edits — agent said ${before}, physician recorded ${after}`
+          : `${updated.state}: ${decision} (${after})`;
+
+      await insertAuditEvent(db, request.tenantId, {
+        action: `licensure.${decision}`,
+        entity: 'licensure_draft',
+        entityId: updated.id,
+        label,
+        userId: request.userId,
+      });
+
+      return updated;
+    } catch (err) {
+      if (err instanceof AlreadyReviewedError) {
+        return reply.status(409).send({ error: err.message });
+      }
+      if (err instanceof NotFoundError) {
+        return reply.status(404).send({ error: err.message });
+      }
+      throw err;
+    }
+  });
+
+  /** A single draft, tenant-scoped. */
+  fastify.get<{ Params: { id: string } }>('/drafts/:id', async (request, reply) => {
+    try {
+      return await getDraftById(db, request.tenantId, request.params.id);
+    } catch (err) {
+      if (err instanceof NotFoundError) return reply.status(404).send({ error: err.message });
+      throw err;
+    }
   });
 };

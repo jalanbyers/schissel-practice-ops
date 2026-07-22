@@ -6,9 +6,11 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { US_GRID, US_NAMES } from '@/lib/us-grid';
 import {
   useLicensureDrafts,
+  useReviewDraft,
   useRunLicensureAnalysis,
   type ClarityCheck,
   type LicensureDraft,
+  type ReviewDecision,
 } from '@/hooks/use-licensure-drafts';
 
 /**
@@ -69,22 +71,49 @@ function ClarityRow({ check }: { check: ClarityCheck }) {
   );
 }
 
-function DraftCard({ draft }: { draft: LicensureDraft }) {
+const DECIDED_LABEL: Record<string, string> = {
+  approved:  'Approved by you',
+  rejected:  'Rejected',
+  escalated: 'Escalated to an expert',
+};
+
+function DraftCard({ draft, contractId }: { draft: LicensureDraft; contractId: string }) {
   const [open, setOpen] = useState(false);
+  const [note, setNote] = useState('');
+  const [noteFor, setNoteFor] = useState<ReviewDecision | null>(null);
+  const review = useReviewDraft(contractId);
+  const decided = draft.approvalStatus !== 'pending';
+
+  /**
+   * Reject and escalate ask for a note first — a decision to override or defer
+   * the agent is exactly the one worth a sentence of explanation later.
+   * Approve does not, because the draft already carries its own reasoning.
+   */
+  const act = (decision: ReviewDecision) => {
+    if ((decision === 'reject' || decision === 'escalate') && noteFor !== decision) {
+      setNoteFor(decision);
+      return;
+    }
+    review.mutate({ draftId: draft.id, decision, note: note || undefined, payload: draft.payload });
+    setNoteFor(null);
+    setNote('');
+  };
   const p = draft.payload;
   const meta = STATUS_LABEL[p.status] ?? { label: p.status, variant: 'idle' };
   const condition4 = p.clarity_checks?.find((c) => c.condition_number === 4);
   const conflictSpan = condition4?.quoted_span;
 
   return (
-    <div className={`draft-card${p.urgency === 'urgent' ? ' urgent' : ''}`}>
+    <div className={`draft-card${p.urgency === 'urgent' ? ' urgent' : ''}${decided ? ` decided ${draft.approvalStatus}` : ''}`}>
       <button type="button" className="draft-head" onClick={() => setOpen((v) => !v)}>
         {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         <span className="mono draft-state">{draft.state}</span>
         <span className="draft-name">{US_NAMES[draft.state] ?? draft.state}</span>
         <StatusPill variant={meta.variant as never} label={meta.label} />
         {p.urgency === 'urgent' && <span className="mini-badge warn">Urgent</span>}
-        <span className="draft-pending">Pending your review</span>
+        <span className="draft-pending">
+          {decided ? DECIDED_LABEL[draft.approvalStatus] : 'Pending your review'}
+        </span>
       </button>
 
       {open && (
@@ -137,6 +166,65 @@ function DraftCard({ draft }: { draft: LicensureDraft }) {
                 <p className="req-note">Recommended: {p.recommended_expert}</p>
               )}
             </div>
+          )}
+
+          {!decided && (
+            <div className="draft-actions">
+              {noteFor && (
+                <input
+                  className="input"
+                  autoFocus
+                  placeholder={
+                    noteFor === 'reject'
+                      ? 'Why are you rejecting this? (recorded in the audit log)'
+                      : 'Who are you escalating to, and why?'
+                  }
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && act(noteFor)}
+                />
+              )}
+              <div className="draft-action-row">
+                <button
+                  type="button"
+                  className="btn primary"
+                  disabled={review.isPending}
+                  onClick={() => act('approve')}
+                >
+                  Approve
+                </button>
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={review.isPending}
+                  onClick={() => act('reject')}
+                >
+                  {noteFor === 'reject' ? 'Confirm reject' : 'Reject'}
+                </button>
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={review.isPending}
+                  onClick={() => act('escalate')}
+                >
+                  {noteFor === 'escalate' ? 'Confirm escalate' : 'Escalate'}
+                </button>
+                {noteFor && (
+                  <button type="button" className="btn ghost" onClick={() => { setNoteFor(null); setNote(''); }}>
+                    Cancel
+                  </button>
+                )}
+              </div>
+              {review.isError && <div className="empty-mini error">{review.error.message}</div>}
+              <p className="req-note">
+                Approving records your sign-off. It does not change your license records or
+                authorize practice anywhere.
+              </p>
+            </div>
+          )}
+
+          {decided && draft.reviewNote && (
+            <p className="req-note">Your note: {draft.reviewNote}</p>
           )}
 
           <div className="draft-meta">
@@ -257,11 +345,12 @@ export function LicensureAnalysis({ contractId, saved }: Props) {
 
           {isLoading && <div className="empty-mini">Loading drafts…</div>}
 
-          {drafts?.map((d) => <DraftCard key={d.id} draft={d} />)}
+          {drafts?.map((d) => <DraftCard key={d.id} draft={d} contractId={contractId} />)}
 
           {drafts?.length ? (
             <p className="req-note">
-              These are drafts. Nothing here is posted to Licensing until you approve it.
+              These are drafts from the agent. Approving records your sign-off — it does not
+              change your license records or authorize practice anywhere.
             </p>
           ) : null}
         </>

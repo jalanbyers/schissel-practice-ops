@@ -94,7 +94,67 @@ export function useRunLicensureAnalysis(contractId: string) {
         body: JSON.stringify({ contractId, ...vars }),
       }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: licensureDraftsKey(contractId) });
+      // Mock mode has no server state to resync with — the fixtures are static
+      // and always pending, so refetching would immediately undo the decision
+      // the physician just made.
+      if (!USE_MOCK) {
+        void queryClient.invalidateQueries({ queryKey: licensureDraftsKey(contractId) });
+      }
+    },
+  });
+}
+
+export type ReviewDecision = 'approve' | 'edit' | 'reject' | 'escalate';
+
+/**
+ * Record a physician's decision. Server-side this is gated on role and MFA —
+ * it is the moment a machine-generated assessment becomes something a
+ * physician has signed off on.
+ */
+export function useReviewDraft(contractId: string) {
+  const queryClient = useQueryClient();
+  return useMutation<
+    LicensureDraft,
+    Error,
+    { draftId: string; decision: ReviewDecision; note?: string; payload?: LicensurePayload }
+  >({
+    mutationFn: async ({ draftId, decision, note, payload }) => {
+      if (USE_MOCK) {
+        await new Promise((r) => setTimeout(r, 400));
+        return {
+          id: draftId,
+          contractId,
+          state: '',
+          plannedCareDate: null,
+          payload: (payload ?? {}) as LicensurePayload,
+          approvalStatus:
+            decision === 'reject' ? 'rejected' : decision === 'escalate' ? 'escalated' : 'approved',
+          reviewNote: note ?? null,
+          createdAt: new Date().toISOString(),
+        };
+      }
+      return clientJson<LicensureDraft>(`/licensure/drafts/${encodeURIComponent(draftId)}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ decision, note, payload }),
+      });
+    },
+    onSuccess: (updated, vars) => {
+      // Update in place so the card re-renders as decided without a refetch —
+      // mock mode has no server to refetch from.
+      queryClient.setQueryData<LicensureDraft[]>(licensureDraftsKey(contractId), (prev) =>
+        prev?.map((d) =>
+          d.id === vars.draftId
+            ? { ...d, approvalStatus: updated.approvalStatus, reviewNote: updated.reviewNote }
+            : d,
+        ),
+      );
+      // Mock mode has no server state to resync with — the fixtures are static
+      // and always pending, so refetching would immediately undo the decision
+      // the physician just made.
+      if (!USE_MOCK) {
+        void queryClient.invalidateQueries({ queryKey: licensureDraftsKey(contractId) });
+      }
     },
   });
 }

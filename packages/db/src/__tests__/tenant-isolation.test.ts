@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { NotFoundError } from '../errors.js';
+import { AlreadyReviewedError, NotFoundError } from '../errors.js';
 import { createPgliteDb } from './helpers/create-pglite-db.js';
 
 import {
@@ -35,6 +35,7 @@ import {
   getDraftsByContract,
   getDraftById,
   insertDrafts,
+  reviewDraft,
 } from '../queries/licensure_drafts.js';
 import {
   getChecklistByTenant,
@@ -259,6 +260,82 @@ describe('licensure drafts — tenant isolation', () => {
       payload: { state: 'CA', status: 'license_current' },
     } as never]);
     const row = await getDraftById(db, TENANT_B, id!);
+    expect(row.approvalStatus).toBe('pending');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The approval gate. These are the transitions that decide whether a
+// machine-generated licensure assessment becomes something a physician has
+// signed off on, so the rules matter more than the happy path.
+// ---------------------------------------------------------------------------
+
+describe('licensure drafts — approval gate', () => {
+  async function seedPending(state = 'CA') {
+    const [id] = await insertDrafts(db, TENANT_B, [{
+      contractId: 'SYN-CONTRACT-GATE',
+      state,
+      plannedCareDate: '2026-10-01',
+      payload: { state, status: 'license_current' },
+    }]);
+    return id!;
+  }
+
+  it('approving moves a pending draft to approved and stamps the reviewer', async () => {
+    const id = await seedPending('CA');
+    const { updated } = await reviewDraft(db, TENANT_B, id, {
+      decision: 'approve', reviewedBy: 'user-1',
+    });
+    expect(updated.approvalStatus).toBe('approved');
+    expect(updated.reviewedBy).toBe('user-1');
+    expect(updated.reviewedAt).not.toBeNull();
+  });
+
+  it('a decided draft cannot be decided again', async () => {
+    const id = await seedPending('TX');
+    await reviewDraft(db, TENANT_B, id, { decision: 'approve', reviewedBy: 'user-1' });
+    await expect(
+      reviewDraft(db, TENANT_B, id, { decision: 'reject', reviewedBy: 'user-2' }),
+    ).rejects.toThrow(AlreadyReviewedError);
+  });
+
+  it('rejecting keeps the note and does not approve', async () => {
+    const id = await seedPending('NC');
+    const { updated } = await reviewDraft(db, TENANT_B, id, {
+      decision: 'reject', reviewedBy: 'user-1', note: 'superseded by a new contract',
+    });
+    expect(updated.approvalStatus).toBe('rejected');
+    expect(updated.reviewNote).toBe('superseded by a new contract');
+  });
+
+  it('escalating is its own state, not an approval', async () => {
+    const id = await seedPending('OH');
+    const { updated } = await reviewDraft(db, TENANT_B, id, {
+      decision: 'escalate', reviewedBy: 'user-1', note: 'sent to licensing counsel',
+    });
+    expect(updated.approvalStatus).toBe('escalated');
+  });
+
+  it('an edit stores the corrected payload and returns the original for audit', async () => {
+    const id = await seedPending('FL');
+    const { previous, updated } = await reviewDraft(db, TENANT_B, id, {
+      decision: 'edit',
+      reviewedBy: 'user-1',
+      editedPayload: { state: 'FL', status: 'renewal_needed' },
+    });
+    // Both sides are available so the audit entry can say what changed.
+    expect((previous.payload as Record<string, unknown>)['status']).toBe('license_current');
+    expect((updated.payload as Record<string, unknown>)['status']).toBe('renewal_needed');
+    expect(updated.approvalStatus).toBe('approved');
+  });
+
+  it("a tenant cannot decide another tenant's draft", async () => {
+    const id = await seedPending('AZ');
+    await expect(
+      reviewDraft(db, TENANT_A, id, { decision: 'approve', reviewedBy: 'attacker' }),
+    ).rejects.toThrow(NotFoundError);
+    // And it is still pending for the owner.
+    const row = await getDraftById(db, TENANT_B, id);
     expect(row.approvalStatus).toBe('pending');
   });
 });
