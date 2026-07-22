@@ -34,6 +34,7 @@ Design (docs/DESIGN_SPEC.md):
 """
 
 import json
+import logging
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -41,6 +42,10 @@ from google.adk.agents import Agent
 from google.adk.apps import App
 from google.adk.models import Gemini
 from google.genai import types
+
+from .safety import blocked_message, scan
+
+logger = logging.getLogger(__name__)
 
 _DATA = Path(__file__).parent / "data" / "state_requirements.json"
 
@@ -536,8 +541,50 @@ needs to resolve. Recommend the type of expert. Never contact anyone.
 """.strip()
 
 
+async def after_model_callback(callback_context, llm_response):  # noqa: ARG001
+    """Block boundary violations before they leave the agent.
+
+    The instruction tells the model not to claim authorization or give legal
+    advice. This makes it so. Without it, those two boundaries were enforced
+    only by an eval metric — caught after the fact, on a case that happened to
+    exercise them, and never in production.
+
+    Fails closed: a violating response is replaced entirely rather than edited,
+    because a partially-scrubbed response is hard to reason about and the
+    legitimate part can always be regenerated. Withholding a correct status is
+    recoverable; emitting an authorization claim is not.
+
+    Parameter names are fixed — ADK invokes callbacks by keyword.
+    """
+    content = getattr(llm_response, "content", None)
+    parts = getattr(content, "parts", None) if content else None
+    if not parts:
+        return None
+
+    violations: list[str] = []
+    for part in parts:
+        text = getattr(part, "text", None)
+        if text:
+            violations.extend(scan(text))
+
+    if not violations:
+        return None
+
+    logger.error("blocked agent output — %s", "; ".join(violations))
+    replacement = blocked_message(violations)
+    for part in parts:
+        if getattr(part, "text", None):
+            part.text = replacement
+            break
+    for part in parts[1:]:
+        if getattr(part, "text", None):
+            part.text = ""
+    return llm_response
+
+
 root_agent = Agent(
     name="root_agent",
+    after_model_callback=after_model_callback,
     model=Gemini(
         # Pinned, not floating. `gemini-flash-latest` would let the model shift
         # under the eval suite, making a prompt regression indistinguishable
