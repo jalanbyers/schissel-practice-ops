@@ -7,16 +7,14 @@ import { SettingsProvider } from '@/components/providers/SettingsContext';
 import { MOCK_SETTINGS } from '@/lib/mock-data';
 
 /**
- * Same guard as middleware.ts — mock mode never applies to a production build.
+ * Same server-only flag as middleware.ts.
  *
- * The middleware already honoured mock mode but this layout did not, so the
- * dashboard could not actually be opened without a configured Auth0 tenant.
- * Mock mode was half-implemented: enough to skip the middleware, not enough to
+ * The middleware already allowed anonymous access but this layout did not, so
+ * the dashboard could not be opened without a configured Auth0 tenant — the
+ * bypass was half-implemented: enough to skip the middleware, not enough to
  * render a page.
  */
-const USE_MOCK =
-  process.env['NEXT_PUBLIC_USE_MOCK'] === 'true' &&
-  process.env.NODE_ENV !== 'production';
+const ALLOW_ANONYMOUS = process.env['DEMO_ALLOW_ANONYMOUS'] === 'true';
 
 interface ShellUser {
   name: string;
@@ -39,7 +37,7 @@ export default async function DashboardLayout({
 }) {
   let user: ShellUser = MOCK_USER;
 
-  if (!USE_MOCK) {
+  if (!ALLOW_ANONYMOUS) {
     const session = await auth0.getSession();
     if (!session) redirect('/login');
 
