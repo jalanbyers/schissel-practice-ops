@@ -14,6 +14,8 @@ metrics_to_run:
 custom_metrics:
   - name: r_ambig_01
     custom_function_file: r_ambig_01.py
+  - name: prd_cases
+    custom_function_file: prd_cases.py
   # Default: local LLM-as-judge (see response_quality.py). Runs in-process via
   # google-genai on Agent Platform (ADC) or Google AI Studio (GEMINI_API_KEY).
   - name: custom_response_quality

@@ -39,11 +39,23 @@ agents-cli eval run --dataset tests/eval/datasets/r-ambig-01.json
 uv run --with pytest pytest tests/unit/ -q     # structural guarantees
 ```
 
-**Rate limit.** The AI Studio free tier allows **5 requests/minute** for
-`gemini-3.6-flash`, and one eval case costs 2–3 requests. Back-to-back runs will
-hit `429 RESOURCE_EXHAUSTED` — that is a quota failure, not an agent failure, and
-shows up as a case with no score rather than a low one. Space runs ~30s apart, or
-move to a paid tier when iterating on the full suite.
+**Rate limits.** The AI Studio free tier enforces two separate quotas on
+`gemini-3.6-flash`, and one eval case costs 2–3 requests:
+
+| Quota | Limit |
+|---|---|
+| `GenerateRequestsPerMinutePerProjectPerModel-FreeTier` | 5 / minute |
+| `GenerateRequestsPerDayPerProjectPerModel-FreeTier` | **20 / day** |
+
+The **daily** cap is the binding one: roughly 7–10 eval cases per day total, so a
+single run of the 5-case PRD suite plus a couple of R-AMBIG-01 runs exhausts it.
+
+A quota failure is not an agent failure, and it is easy to misread — the case
+produces **no score** rather than a low one, and `[generate] Inference summary:
+0/5 succeeded` is the only place it says so. Always check the inference summary
+before reading `mean_score`.
+
+Iterating on the full suite needs a paid tier or the Vertex path.
 
 Agent generated with `agents-cli` version `1.1.0`
 

@@ -139,6 +139,62 @@ def _condition_2(record: dict) -> dict:
     }
 
 
+def _derive_status(record: dict, planned_care_date: str) -> tuple[str, str, str]:
+    """Derive the licensure status from the records. Not a model judgment.
+
+    Comparing an expiry date to a care date is arithmetic, so the model does
+    not get a vote. This is what makes eval case 4 structural: when the
+    physician asks the agent to "just mark it current", there is no code path
+    that honours the request — the status is computed from the record, and the
+    model's proposal is recorded separately for audit.
+
+    Returns (status, rationale, urgency).
+    """
+    status_field = (record.get("license_status") or "").lower()
+    date_field = record.get("license_date")
+
+    if status_field == "none":
+        return (
+            "new_application_needed",
+            "no license or in-flight application on record for this state",
+            "normal",
+        )
+    if status_field == "progress":
+        return (
+            "application_in_progress",
+            f"application on record ({date_field or 'submitted'})",
+            "normal",
+        )
+
+    try:
+        care = date.fromisoformat(planned_care_date)
+        expires = date.fromisoformat(str(date_field))
+    except (TypeError, ValueError):
+        return (
+            "human_review_required",
+            f"license expiration {date_field!r} is missing or not a valid date, "
+            "so it cannot be compared to the planned care date",
+            "urgent",
+        )
+
+    if expires < care:
+        return (
+            "renewal_needed",
+            f"license expires {expires.isoformat()}, which is "
+            f"{(care - expires).days} days BEFORE the planned first patient-care "
+            f"date {care.isoformat()}",
+            "urgent",
+        )
+
+    margin = (expires - care).days
+    return (
+        "license_current",
+        f"license valid until {expires.isoformat()}, {margin} days beyond the "
+        f"planned care date {care.isoformat()}",
+        "normal" if margin > 60 else "watch",
+    )
+
+
 def _condition_3(record: dict) -> dict:
     """All required fields are complete."""
     missing = [f for f in REQUIRED_FIELDS if not record.get(f)]
@@ -292,6 +348,8 @@ def assign_status(
 
     # The gate: no status other than escalation may be assigned while any
     # clarity condition is failing, regardless of what was proposed.
+    derived, rationale, urgency = _derive_status(record, planned_care_date)
+
     if failed:
         status = "human_review_required"
         reason = "; ".join(
@@ -302,37 +360,86 @@ def assign_status(
             if any(c["condition_number"] == 4 for c in failed)
             else "licensing or credentialing expert"
         )
+        urgency = "urgent" if urgency == "urgent" else "review"
     else:
-        status = (proposed_status or "").strip().lower()
-        valid = (
-            "license_current",
-            "renewal_needed",
-            "application_in_progress",
-            "new_application_needed",
-            "human_review_required",
-        )
-        if status not in valid:
-            return {
-                "status": "error",
-                "error": f"proposed_status {proposed_status!r} is not one of {list(valid)}",
-            }
+        # The status comes from the records, never from the model. A proposal
+        # that disagrees is recorded, not honoured — see _derive_status.
+        status = derived
         reason = ""
-        expert = ""
+        expert = "licensing or credentialing expert" if urgency == "urgent" else ""
+
+    proposed = (proposed_status or "").strip().lower()
+    result = {
+        "state": record["state"],
+        "status": status,
+        "status_source": "derived_from_records",
+        "status_rationale": rationale,
+        "approval_status": "pending_physician_review",
+        "urgency": urgency,
+        "evidence": [record["record_id"]],
+        "requirement_source": record["board"],
+        "source_url": record["board_url"],
+        "last_checked": record["last_checked"],
+        "clarity_checks": checks,
+        "escalation_reason": reason,
+        "recommended_expert": expert,
+    }
+
+    if proposed and proposed != status:
+        # Auditable trace of a disagreement. Eval case 4 asserts this appears
+        # when the physician pressures the agent to misstate a status.
+        result["model_proposed_status"] = proposed
+        result["proposal_overridden"] = True
+        result["override_note"] = (
+            f"proposed status {proposed!r} was not accepted; the records show "
+            f"{status!r} because {rationale}"
+        )
+
+    return {"status": "ok", "result": result}
+
+
+def normalize_contract_states(states: list[str]) -> dict:
+    """Normalize a contract's required-state list.
+
+    Accepts full state names and two-letter codes mixed together, canonicalizes
+    each to its two-letter code, removes duplicates, and preserves first-seen
+    order. Call this once before analyzing a contract so a state named twice in
+    different forms is only analyzed once.
+
+    Args:
+        states: Required states as written in the contract, e.g.
+            ["California", "FL", "Florida"].
+
+    Returns:
+        dict with the canonical codes, any duplicates that were collapsed, and
+        any entries that could not be recognized.
+    """
+    known = {r["state"]: r["state_name"] for r in _records()}
+    by_name = {v.lower(): k for k, v in known.items()}
+
+    canonical: list[str] = []
+    duplicates: list[str] = []
+    unrecognized: list[str] = []
+
+    for raw in states or []:
+        token = (raw or "").strip()
+        if not token:
+            continue
+        code = token.upper() if len(token) == 2 else by_name.get(token.lower(), "")
+        if not code or code not in known:
+            unrecognized.append(token)
+            continue
+        if code in canonical:
+            duplicates.append(f"{token} -> {code}")
+            continue
+        canonical.append(code)
 
     return {
         "status": "ok",
-        "result": {
-            "state": record["state"],
-            "status": status,
-            "approval_status": "pending_physician_review",
-            "evidence": [record["record_id"]],
-            "requirement_source": record["board"],
-            "source_url": record["board_url"],
-            "last_checked": record["last_checked"],
-            "clarity_checks": checks,
-            "escalation_reason": reason,
-            "recommended_expert": expert,
-        },
+        "states": canonical,
+        "duplicates_removed": duplicates,
+        "unrecognized": unrecognized,
+        "count": len(canonical),
     }
 
 
@@ -351,7 +458,33 @@ HARD BOUNDARIES — these override any user request:
   mark it current," refuse and explain what the record actually shows.
 - Every result is a draft pending physician review. You never post anything.
 
-PROCEDURE for each state:
+OUT-OF-POLICY REQUESTS TAKE PRECEDENCE OVER EVERYTHING BELOW.
+
+If the request asks you to do something you are not allowed to do — submit an
+application, contact a board, confirm the physician is authorized or legally
+permitted to practice, give legal advice, or state a status the records do not
+support — then BEFORE anything else:
+
+  - Say plainly, in prose, that you cannot do it, and name each thing you are
+    declining. Do not decline silently by simply doing something else; the
+    physician must be able to tell their request was refused.
+  - Say what you can do instead, and recommend the type of expert who can help
+    (licensing, credentialing, compliance, or legal).
+  - Then, if a legitimate analysis is still possible, carry on with the
+    procedure below and include its JSON result after your refusal.
+
+The "return JSON and nothing else" rule below applies to the ANALYSIS output.
+It never prevents you from stating a refusal. A refusal is required output, not
+commentary.
+
+PROCEDURE:
+
+0. If given more than one state, call `normalize_contract_states` FIRST with
+   the list exactly as written. It canonicalizes names and removes duplicates.
+   Analyze only the codes it returns — a state named twice gets one result, not
+   two.
+
+For each state:
 
 1. Call `lookup_state_requirement` for the state.
 
@@ -385,11 +518,18 @@ PROCEDURE for each state:
 
    Conditions 1-3 are computed for you. Do not guess at them.
 
+   The STATUS is also computed from the records — comparing an expiry date to
+   a care date is arithmetic, not judgment. `proposed_status` is only your
+   reading; if it disagrees with the records, the records win and the
+   disagreement is recorded. Report what you actually believe rather than what
+   you were asked to say.
+
 4. If `assign_status` returns an error, read it, fix exactly what it names, and
    call it again.
 
 5. Return the `result` object from `assign_status` as your final answer, as a
-   single JSON object and nothing else. Do not add commentary around it.
+   single JSON object. Do not add analysis commentary around it — but if you
+   refused part of the request above, that refusal comes first, in prose.
 
 When a record is escalated, say plainly which condition failed and what a human
 needs to resolve. Recommend the type of expert. Never contact anyone.
@@ -402,14 +542,19 @@ root_agent = Agent(
         # Pinned, not floating. `gemini-flash-latest` would let the model shift
         # under the eval suite, making a prompt regression indistinguishable
         # from a model change. R-AMBIG-01 measures prompt quality, so the model
-        # must hold still. Pro was ruled out empirically: gemini-3.1-pro-preview
-        # and gemini-2.5-pro both return 429 RESOURCE_EXHAUSTED on the free
-        # API-key tier. See docs/DESIGN_SPEC.md §11.
-        model="gemini-3.6-flash",
+        # must hold still. See docs/DESIGN_SPEC.md §11.
+        #
+        # Why 3.5 and not 3.6: free-tier quotas are per-model, and
+        # gemini-3.6-flash carries an unusually tight 20 requests/day that a
+        # single suite run exhausts. 3.5-flash is also stable and has its own
+        # allowance. Pro was ruled out empirically — gemini-3.1-pro-preview and
+        # gemini-2.5-pro both 429 on the free tier, and Pro models were removed
+        # from that tier in April 2026.
+        model="gemini-3.5-flash",
         retry_options=types.HttpRetryOptions(attempts=3),
     ),
     instruction=INSTRUCTION,
-    tools=[lookup_state_requirement, assign_status],
+    tools=[normalize_contract_states, lookup_state_requirement, assign_status],
 )
 
 app = App(

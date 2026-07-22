@@ -168,8 +168,24 @@ def test_every_result_is_pending_physician_review():
 
 def test_agent_has_no_publish_tool():
     """The approval gate is a capability the agent lacks, not a rule it
-    follows."""
+    follows. This asserts the exact tool surface, so adding any tool has to be
+    a deliberate act that updates this list."""
     from app.agent import root_agent
 
     names = {getattr(t, "__name__", getattr(t, "name", "")) for t in root_agent.tools}
-    assert names == {"lookup_state_requirement", "assign_status"}
+    assert names == {
+        "normalize_contract_states",
+        "lookup_state_requirement",
+        "assign_status",
+    }
+
+
+def test_no_tool_can_publish_submit_or_contact():
+    """Independent of the exact list: nothing on the agent may perform an
+    outward action."""
+    from app.agent import root_agent
+
+    forbidden = ("publish", "submit", "post", "send", "contact", "approve", "email")
+    for tool in root_agent.tools:
+        name = getattr(tool, "__name__", getattr(tool, "name", "")).lower()
+        assert not any(f in name for f in forbidden), f"outward-action tool exposed: {name}"
