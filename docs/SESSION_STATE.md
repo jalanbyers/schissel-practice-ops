@@ -31,7 +31,7 @@ This is implemented and passing as eval case **R-AMBIG-01**. It is the single mo
 1. **Paste the eight DEVELOP answers** from `docs/PRD_DEVELOP_RESPONSES.md` into the sheet's Student Response cells.
 2. **Read them in Alan's voice first** — they are written first person and should sound like him.
 3. ~~Update the approval-workflow claim.~~ **Done** — the Known-limitations and User-interaction rows now describe the workflow as built.
-4. ~~Verify the Demo row against a real full-stack run.~~ **Done** — see §6. Add one sentence noting the demo used the local demo identity rather than production auth; that is the only claim this changes.
+4. ~~Verify the Demo row against a real full-stack run.~~ **Done** — see §6. The demo-identity sentence has been added to the Demo row in `PRD_DEVELOP_RESPONSES.md`.
 5. DEPLOY and FINAL rows are untouched.
 
 ---
@@ -221,7 +221,7 @@ That gives full context in two files. `DESIGN_SPEC.md` §11 and section 5 above 
 **Immediate next steps, in the order I'd take them:**
 
 1. **Record the demo.** The stack is verified (§6) and the flow that reads best is: pick contract states including a duplicate → set the care date → Analyze → open Ohio to show conditions 1–3 passing and condition 4 failing with the contradictory sentences highlighted → Florida for the urgent timing → approve one to show the gate closing.
-2. **Paste the DEVELOP answers** into the PRD sheet. Current as of #14; read them in Alan's voice first, and add the one sentence about the demo identity.
+2. **Paste the DEVELOP answers** into the PRD sheet. Current and complete; read them in Alan's voice first.
 3. Then pick from the open items — the contract-level summary is the most demo-visible; wiring `output_examples.json` into the prompt is the most faithful to the PRD; a database seed script (#10) would remove the hand-inserted rows.
 
 **If the demo needs re-running**, everything in §4 is verified working as written. The three traps listed there each cost time once already.
