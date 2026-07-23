@@ -90,7 +90,7 @@ export const MOCK_FINANCES = {
 };
 
 export const MOCK_ENGAGEMENTS: MockEngagement[] = [
-  { name: 'Teladoc Health', model: 'Async visits',    volume: '62 visits MTD', rate: '$32 / visit',  status: 'active' },
+  { name: 'Teladoc Health', model: 'Async visits',    volume: '62 visits MTD', rate: '$32 / visit',  status: 'prospect' },
   { name: 'Amwell',         model: 'Scheduled video', volume: '18 hrs / wk',   rate: '$120 / hr',    status: 'active' },
   { name: 'Wheel',          model: 'On-demand',       volume: '40 visits MTD', rate: '$28 / visit',  status: 'active' },
   { name: 'SteadyMD',       model: 'Panel coverage',  volume: 'Retainer',      rate: '$4,000 / mo',  status: 'active' },
