@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertTriangle, Check, ChevronDown, ChevronRight, Loader2, Sparkles } from 'lucide-react';
+import { AlertTriangle, Check, ChevronDown, ChevronRight, Loader2, ShieldCheck, Sparkles } from 'lucide-react';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { US_GRID, US_NAMES } from '@/lib/us-grid';
 import {
@@ -283,10 +283,21 @@ export function LicensureAnalysis({ contractId, saved }: Props) {
   const canRun = ready && states.length > 0 && !!careDate && !run.isPending;
 
   return (
-    <div className="dgroup">
-      <div className="dgroup-head">
-        <span className="dgroup-title">Licensure review</span>
-        {drafts?.length ? <span className="dgroup-meta">{drafts.length} drafts</span> : null}
+    <div className="dgroup telecred">
+      {/*
+        TeleCred is branded as a distinct embedded product, not a portal
+        section — it is designed to drop into any telemedicine portal, and the
+        header signals that it is a third-party service living inside this one.
+      */}
+      <div className="telecred-head">
+        <div className="telecred-brand">
+          <ShieldCheck size={17} className="telecred-mark" aria-hidden="true" />
+          <span className="telecred-name">TeleCred<span className="telecred-reg">®</span></span>
+        </div>
+        <p className="telecred-tagline">Licensure intelligence for telemedicine contracts</p>
+        {drafts?.length ? (
+          <span className="telecred-meta">{drafts.length} draft{drafts.length === 1 ? '' : 's'}</span>
+        ) : null}
       </div>
 
       {!ready && (
@@ -299,7 +310,7 @@ export function LicensureAnalysis({ contractId, saved }: Props) {
         <>
           <div className="field-grid">
             <div className="field">
-              <label htmlFor="care-date">Planned first patient-care date</label>
+              <label htmlFor="care-date" className="telecred-label">Planned first patient-care date</label>
               <input
                 id="care-date"
                 type="date"
@@ -311,17 +322,19 @@ export function LicensureAnalysis({ contractId, saved }: Props) {
           </div>
 
           <div className="state-chips" role="group" aria-label="Required states">
-            {US_GRID.map(([code]) => (
-              <button
-                key={code}
-                type="button"
-                className={`state-chip${states.includes(code) ? ' on' : ''}`}
-                aria-pressed={states.includes(code)}
-                onClick={() => toggle(code)}
-              >
-                {code}
-              </button>
-            ))}
+            {US_GRID.map(([code]) => code)
+              .sort((a, b) => a.localeCompare(b))
+              .map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  className={`state-chip${states.includes(code) ? ' on' : ''}`}
+                  aria-pressed={states.includes(code)}
+                  onClick={() => toggle(code)}
+                >
+                  {code}
+                </button>
+              ))}
           </div>
 
           <button

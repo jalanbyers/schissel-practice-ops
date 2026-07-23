@@ -850,3 +850,76 @@ select.input {
 .draft-actions { border-top: 1px solid var(--line); padding-top: 11px; margin-top: 11px; }
 .draft-action-row { display: flex; flex-wrap: wrap; gap: 7px; margin: 7px 0; }
 .draft-actions .input { margin-bottom: 4px; }
+
+/* ── TeleCred — embedded product branding ────────────────────────────────── */
+/* Branded as a distinct third-party service inside the host portal, not a
+   portal section. The header carries the wordmark and positioning so the
+   "embeddable in any telemedicine portal" story reads at a glance. */
+
+.dgroup.telecred {
+  border: 1px solid color-mix(in srgb, var(--info) 30%, var(--line));
+  border-radius: 9px;
+  padding: 0 0 12px;
+  overflow: hidden;
+  /* Whole-panel light-blue wash so TeleCred reads as one embedded product,
+     not a section of the host portal. Cards inside keep their own near-white
+     surface, so they lift cleanly off this. */
+  background: color-mix(in srgb, var(--info) 8%, var(--surface, #fff));
+}
+.telecred-head {
+  position: relative;
+  padding: 13px 14px 12px;
+  /* A touch stronger than the panel so the brand band still separates. */
+  background: color-mix(in srgb, var(--info) 14%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--info) 22%, var(--line));
+}
+.telecred-brand { display: flex; align-items: center; gap: 3px; }
+/* Lucide icon: sized via the `size` prop, coloured via currentColor. */
+.telecred-mark { color: var(--info); flex: none; }
+.telecred-name {
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+  color: var(--ink-1);
+}
+.telecred-reg {
+  font-size: 14px;
+  font-weight: 400;
+  vertical-align: bottom;
+  margin-left: 2px;
+}
+.telecred-tagline {
+  margin: 3px 0 0;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+.telecred-meta {
+  position: absolute;
+  top: 13px;
+  right: 14px;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+/* The controls and cards keep their own padding, so give the body inset back. */
+.dgroup.telecred > *:not(.telecred-head) { margin-left: 14px; margin-right: 14px; }
+.dgroup.telecred > .telecred-head { margin: 0; }
+
+/* Breathing room between the brand band and the first field. */
+.telecred-label { display: block; padding-top: 8px; }
+
+/* The failure-mode badge sits inline after a section title ("Conflicting
+   text  [internal contradiction]"). Scoped to the section-title context so
+   the shared .mini-badge used elsewhere is untouched. */
+.dgroup-mini .dgroup-title .mini-badge { margin-left: 10px; }
+
+/* White chips read as buttons against the light-blue panel, rather than
+   dissolving into it. Selected chips keep the solid blue fill. */
+.dgroup.telecred .state-chip {
+  background: var(--surface, #fff);
+  border-color: color-mix(in srgb, var(--info) 28%, var(--line));
+}
+.dgroup.telecred .state-chip.on {
+  background: var(--info);
+  border-color: var(--info);
+  color: #fff;
+}
