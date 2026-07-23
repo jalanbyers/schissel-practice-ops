@@ -100,12 +100,25 @@ export const licensureRoutes: FastifyPluginAsync<{ db: DrizzleDb }> = async (fas
     const analyzed = agent.results.filter((r) => r.result && !r.error);
     const failed = agent.results.filter((r) => !r.result || r.error);
 
+    // A state the physician has already decided (approved / rejected /
+    // escalated) is not re-drafted. replacePendingDraftsForContract clears only
+    // pending rows, so without this guard a re-analysis would leave the old
+    // decided draft AND insert a fresh pending one — two cards for the same
+    // state. Skipping preserves the decision rather than silently discarding
+    // it; a decided state that genuinely needs re-analysis is a deliberate
+    // re-open, not a side effect of clicking Analyze again.
+    const existing = await getDraftsByContract(db, request.tenantId, contractId);
+    const decided = new Set(
+      existing.filter((d) => d.approvalStatus !== 'pending').map((d) => d.state),
+    );
+
     await replacePendingDraftsForContract(db, request.tenantId, contractId);
 
+    const toInsert = analyzed.filter((r) => !decided.has(r.state));
     const ids = await insertDrafts(
       db,
       request.tenantId,
-      analyzed.map((r) => ({
+      toInsert.map((r) => ({
         contractId,
         state: r.state,
         plannedCareDate,
@@ -113,8 +126,13 @@ export const licensureRoutes: FastifyPluginAsync<{ db: DrizzleDb }> = async (fas
       })),
     );
 
+    const skipped = analyzed
+      .filter((r) => decided.has(r.state))
+      .map((r) => r.state);
+
     return reply.status(201).send({
       contractId,
+      skipped,
       plannedCareDate,
       created: ids.length,
       // Reported rather than hidden: a state the agent could not analyze is

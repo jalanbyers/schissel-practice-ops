@@ -19,10 +19,10 @@ Production would replace this with the Cloud Run deployment of
 `fast_api_app.py`; the Fastify side only knows a base URL.
 """
 
+import asyncio
 import json
 import logging
 import re
-import uuid
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
@@ -126,10 +126,19 @@ async def analyze(request: AnalyzeRequest) -> AnalyzeResponse:
     normalized = normalize_contract_states(request.states)
     runner = InMemoryRunner(agent=root_agent, app_name="app")
 
-    results = [
-        await _analyze_one(runner, state, request.contract_id, request.planned_care_date)
-        for state in normalized["states"]
-    ]
+    # Analyze states concurrently rather than one after another. Each state is
+    # an independent agent run with its own session, so there is nothing to
+    # serialize — and sequentially, a five-state contract meant five model
+    # round-trips back to back (~15s each). gather cuts a multi-state contract
+    # to roughly the cost of its slowest single state.
+    results = list(
+        await asyncio.gather(
+            *(
+                _analyze_one(runner, state, request.contract_id, request.planned_care_date)
+                for state in normalized["states"]
+            )
+        )
+    )
 
     for unknown in normalized["unrecognized"]:
         results.append(
