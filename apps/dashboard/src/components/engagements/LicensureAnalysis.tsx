@@ -283,10 +283,21 @@ export function LicensureAnalysis({ contractId, saved }: Props) {
   const canRun = ready && states.length > 0 && !!careDate && !run.isPending;
 
   return (
-    <div className="dgroup">
-      <div className="dgroup-head">
-        <span className="dgroup-title">Licensure review</span>
-        {drafts?.length ? <span className="dgroup-meta">{drafts.length} drafts</span> : null}
+    <div className="dgroup telecred">
+      {/*
+        TeleCred is branded as a distinct embedded product, not a portal
+        section — it is designed to drop into any telemedicine portal, and the
+        header signals that it is a third-party service living inside this one.
+      */}
+      <div className="telecred-head">
+        <div className="telecred-brand">
+          <span className="telecred-mark" aria-hidden="true">◆</span>
+          <span className="telecred-name">TeleCred</span>
+        </div>
+        <p className="telecred-tagline">Licensure intelligence for telemedicine contracts</p>
+        {drafts?.length ? (
+          <span className="telecred-meta">{drafts.length} draft{drafts.length === 1 ? '' : 's'}</span>
+        ) : null}
       </div>
 
       {!ready && (

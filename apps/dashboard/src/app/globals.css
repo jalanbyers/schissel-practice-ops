@@ -850,3 +850,44 @@ select.input {
 .draft-actions { border-top: 1px solid var(--line); padding-top: 11px; margin-top: 11px; }
 .draft-action-row { display: flex; flex-wrap: wrap; gap: 7px; margin: 7px 0; }
 .draft-actions .input { margin-bottom: 4px; }
+
+/* ── TeleCred — embedded product branding ────────────────────────────────── */
+/* Branded as a distinct third-party service inside the host portal, not a
+   portal section. The header carries the wordmark and positioning so the
+   "embeddable in any telemedicine portal" story reads at a glance. */
+
+.dgroup.telecred {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 0;
+  overflow: hidden;
+}
+.telecred-head {
+  position: relative;
+  padding: 13px 14px 12px;
+  background: color-mix(in srgb, var(--info) 7%, transparent);
+  border-bottom: 1px solid var(--line);
+}
+.telecred-brand { display: flex; align-items: center; gap: 7px; }
+.telecred-mark { color: var(--info); font-size: 14px; line-height: 1; }
+.telecred-name {
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+  color: var(--ink-1);
+}
+.telecred-tagline {
+  margin: 3px 0 0;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+.telecred-meta {
+  position: absolute;
+  top: 13px;
+  right: 14px;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+/* The controls and cards keep their own padding, so give the body inset back. */
+.dgroup.telecred > *:not(.telecred-head) { margin-left: 14px; margin-right: 14px; }
+.dgroup.telecred > .telecred-head { margin: 0; }
