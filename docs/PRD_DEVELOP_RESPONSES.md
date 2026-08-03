@@ -121,7 +121,7 @@ Beyond the six cases, 113 unit tests cover the guarantees the eval cannot prove 
 
 **The output examples are not in the agent's context.** They inform the tests, not the prompt. The PRD lists them as an agent input and they are not yet wired that way.
 
-**The safety deny-lists are narrow by necessity.** They catch assertions like "you are authorized to practice" and "the clause is unenforceable." A model determined to imply authorization in wording I did not anticipate would get through. The structural guarantees — no submit tool, no publish tool, status computed from records — do not have that weakness, which is why I moved as much as possible into that category.
+**The safety deny-lists are narrow by necessity.** They catch assertions like "you are authorized to practice" and "the clause is unenforceable." A model determined to imply authorization in wording I did not anticipate would get through. The structural guarantees — no submit tool, no publish tool, status computed from records — do not have that weakness, which is why I moved as much as possible into that category. I have since measured this rather than leaving it as a caveat: ten authorization-implying phrasings I did not design against were caught zero out of ten by the runtime filter — the full result and why it is survivable are reported in the Deploy Risk row, and the number is pinned by a test so it cannot silently go stale.
 
 **The PHI boundary is deferred, not resolved.** The repository's own rules say anything touching license documents should stay on a local model, and this agent targets a cloud deployment. It is fenced to synthetic data with an enforced prefix check, but clearing it for real data needs a decision I have not made.
 
