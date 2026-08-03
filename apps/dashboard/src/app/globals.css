@@ -802,7 +802,30 @@ select.input {
 .draft-name  { font-size: 12px; color: var(--ink-2); flex: 1; }
 .draft-pending { font-size: 10.5px; color: var(--ink-3); font-style: italic; }
 
-.draft-body { padding: 2px 12px 12px 26px; border-top: 1px solid var(--line); }
+/* Animated disclosure.
+   Uses a max-height transition rather than the grid 0fr -> 1fr technique.
+   That technique needs overflow:hidden on the grid item to clip the collapsed
+   content, but overflow:hidden zeroes the item's automatic minimum size, so in
+   this indefinite-height grid `1fr` resolved to 0px and the card never opened
+   (measured: 0px with overflow hidden, 991px with it visible).
+   max-height needs a ceiling above the tallest card — the Ohio card, with the
+   full requirement text, measures ~2.1k. 5000px leaves headroom; content taller
+   than that would clip rather than break. */
+.draft-body-wrap {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .26s cubic-bezier(.4, 0, .2, 1);
+}
+.draft-body-wrap.open { max-height: 5000px; }
+.draft-body-wrap > .draft-body { padding: 0; border-top: 0; }
+.draft-body-wrap.open > .draft-body {
+  padding: 2px 12px 12px 26px;
+  border-top: 1px solid var(--line);
+}
+@media (prefers-reduced-motion: reduce) {
+  .draft-body-wrap { transition: none; }
+}
+.draft-head svg:first-child { transition: transform .2s ease; }
 .dgroup-mini { margin: 11px 0; }
 .dgroup-mini .dgroup-title { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-3); }
 
@@ -923,3 +946,23 @@ select.input {
   border-color: var(--info);
   color: #fff;
 }
+
+/* ── Review state pill ───────────────────────────────────────────────────── */
+/* Deliberately outlined, while the agent's analysis status next to it is a
+   filled StatusPill. Two different questions — "what did the agent find" and
+   "where does your decision stand" — must not look like one label. */
+.review-pill {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .03em;
+  padding: 3px 9px;
+  border-radius: 20px;
+  border: 1px solid currentColor;
+  background: transparent;
+  white-space: nowrap;
+  flex: none;
+}
+.review-pill.wait   { color: var(--ink-3); }
+.review-pill.ok     { color: var(--ok); background: color-mix(in srgb, var(--ok) 8%, transparent); }
+.review-pill.info   { color: var(--info); background: color-mix(in srgb, var(--info) 8%, transparent); }
+.review-pill.muted  { color: var(--ink-3); background: color-mix(in srgb, var(--ink-3) 8%, transparent); opacity: .8; }

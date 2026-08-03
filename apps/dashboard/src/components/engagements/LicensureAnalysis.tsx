@@ -71,10 +71,21 @@ function ClarityRow({ check }: { check: ClarityCheck }) {
   );
 }
 
-const DECIDED_LABEL: Record<string, string> = {
-  approved:  'Approved by you',
-  rejected:  'Rejected',
-  escalated: 'Escalated to an expert',
+/**
+ * The physician's review state, kept visually separate from the agent's
+ * analysis status.
+ *
+ * Two different things sit side by side in the card header — what the agent
+ * concluded ("Renewal needed") and where the physician's decision stands
+ * ("Approved"). They must not read as one label. The analysis status uses the
+ * filled StatusPill; review state uses an outlined pill, so the shape itself
+ * distinguishes "what the agent found" from "what you decided".
+ */
+const REVIEW_STATE: Record<string, { label: string; tone: string }> = {
+  pending:   { label: 'Pending review', tone: 'wait' },
+  approved:  { label: 'Approved',       tone: 'ok' },
+  rejected:  { label: 'Rejected',       tone: 'muted' },
+  escalated: { label: 'Escalated',      tone: 'info' },
 };
 
 function DraftCard({ draft, contractId }: { draft: LicensureDraft; contractId: string }) {
@@ -94,12 +105,23 @@ function DraftCard({ draft, contractId }: { draft: LicensureDraft; contractId: s
       setNoteFor(decision);
       return;
     }
-    review.mutate({ draftId: draft.id, decision, note: note || undefined, payload: draft.payload });
+    review.mutate(
+      { draftId: draft.id, decision, note: note || undefined, payload: draft.payload },
+      {
+        // Collapse once the decision is recorded. The card is finished with —
+        // closing it confirms the write landed and returns the physician to
+        // the list of states still waiting on them, rather than leaving a
+        // decided card open with its actions gone.
+        onSuccess: () => setOpen(false),
+      },
+    );
     setNoteFor(null);
     setNote('');
   };
   const p = draft.payload;
   const meta = STATUS_LABEL[p.status] ?? { label: p.status, variant: 'idle' };
+  const reviewState =
+    REVIEW_STATE[draft.approvalStatus] ?? REVIEW_STATE['pending']!;
   const condition4 = p.clarity_checks?.find((c) => c.condition_number === 4);
   const conflictSpan = condition4?.quoted_span;
 
@@ -111,12 +133,16 @@ function DraftCard({ draft, contractId }: { draft: LicensureDraft; contractId: s
         <span className="draft-name">{US_NAMES[draft.state] ?? draft.state}</span>
         <StatusPill variant={meta.variant as never} label={meta.label} />
         {p.urgency === 'urgent' && <span className="mini-badge warn">Urgent</span>}
-        <span className="draft-pending">
-          {decided ? DECIDED_LABEL[draft.approvalStatus] : 'Pending your review'}
-        </span>
+        <span className={`review-pill ${reviewState.tone}`}>{reviewState.label}</span>
       </button>
 
-      {open && (
+      {/*
+        Always rendered so the open/close can animate. A conditional mount has
+        nothing to transition out of, so the wrapper animates its grid row from
+        0fr to 1fr and the inner element carries the padding — otherwise the
+        padding keeps the collapsed card a few pixels tall.
+      */}
+      <div className={`draft-body-wrap${open ? ' open' : ''}`} aria-hidden={!open}>
         <div className="draft-body">
           {/* The agent declining to say what it was asked to say. */}
           {p.proposal_overridden && (
@@ -244,7 +270,7 @@ function DraftCard({ draft, contractId }: { draft: LicensureDraft; contractId: s
             {p.evidence?.length ? <span className="mono">{p.evidence.join(', ')}</span> : null}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
