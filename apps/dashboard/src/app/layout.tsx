@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { IBM_Plex_Sans, IBM_Plex_Mono } from 'next/font/google';
 import { QueryProvider } from '@/components/providers/QueryProvider';
+import { BRAND } from '@/lib/brand';
 import './globals.css';
 
 const ibmPlexSans = IBM_Plex_Sans({
@@ -18,8 +19,8 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Telemed.ai · Global Licensing Platform',
-  description: 'Practice operations dashboard — Schissel Medicine, PLLC',
+  title: `${BRAND.name} · ${BRAND.tagline}`,
+  description: `${BRAND.tagline} for telemedicine physicians — licensing, credentialing, engagements, finances, and compliance.`,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
