@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { AlertTriangle, Check, ChevronDown, ChevronRight, Loader2, ShieldCheck, Sparkles } from 'lucide-react';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { US_GRID, US_NAMES } from '@/lib/us-grid';
@@ -96,6 +96,25 @@ function DraftCard({ draft, contractId }: { draft: LicensureDraft; contractId: s
   const decided = draft.approvalStatus !== 'pending';
 
   /**
+   * Measure the body so the transition runs over its real height.
+   *
+   * A fixed max-height ceiling (5000px against ~2.1k of content) meant most of
+   * the transition was spent on height the eye never sees — the card appeared
+   * to lag on open and to hang before moving on close, and no easing curve
+   * could fix that because the curve was being applied to mostly-invisible
+   * range. Measuring makes the curve act on exactly the distance travelled.
+   *
+   * Recomputed when the note field appears or the decision lands, since both
+   * change the body's height while it is open.
+   */
+  const bodyRef = useRef<HTMLDivElement | null>(null);
+  const [bodyHeight, setBodyHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    setBodyHeight(open ? (bodyRef.current?.scrollHeight ?? 0) : 0);
+  }, [open, noteFor, review.isPending, draft.approvalStatus, draft.payload]);
+
+  /**
    * Reject and escalate ask for a note first — a decision to override or defer
    * the agent is exactly the one worth a sentence of explanation later.
    * Approve does not, because the draft already carries its own reasoning.
@@ -142,8 +161,12 @@ function DraftCard({ draft, contractId }: { draft: LicensureDraft; contractId: s
         0fr to 1fr and the inner element carries the padding — otherwise the
         padding keeps the collapsed card a few pixels tall.
       */}
-      <div className={`draft-body-wrap${open ? ' open' : ''}`} aria-hidden={!open}>
-        <div className="draft-body">
+      <div
+        className={`draft-body-wrap${open ? ' open' : ''}`}
+        style={{ maxHeight: bodyHeight }}
+        aria-hidden={!open}
+      >
+        <div className="draft-body" ref={bodyRef}>
           {/* The agent declining to say what it was asked to say. */}
           {p.proposal_overridden && (
             <div className="override-note">
