@@ -36,12 +36,13 @@ Design (docs/DESIGN_SPEC.md):
 import json
 import logging
 from datetime import date, timedelta
+from functools import cached_property
 from pathlib import Path
 
 from google.adk.agents import Agent
 from google.adk.apps import App
 from google.adk.models import Gemini
-from google.genai import types
+from google.genai import Client, types
 
 from .safety import blocked_message, scan
 
@@ -582,24 +583,76 @@ async def after_model_callback(callback_context, llm_response):  # noqa: ARG001
     return llm_response
 
 
+# Pinned, not floating. `gemini-flash-latest` would let the model shift under
+# the eval suite, making a prompt regression indistinguishable from a model
+# change. R-AMBIG-01 measures prompt quality, so the model must hold still.
+# See docs/DESIGN_SPEC.md §11.
+#
+# Why 3.5 and not 3.6: free-tier quotas are per-model, and gemini-3.6-flash
+# carries an unusually tight 20 requests/day that a single suite run exhausts.
+# 3.5-flash is also stable and has its own allowance. Pro was ruled out
+# empirically — gemini-3.1-pro-preview and gemini-2.5-pro both 429 on the free
+# tier, and Pro models were removed from that tier in April 2026.
+MODEL_NAME = "gemini-3.5-flash"
+_RETRY = types.HttpRetryOptions(attempts=3)
+
+
+class KeyedGemini(Gemini):
+    """A Gemini model that carries its own API key instead of reading the env.
+
+    Exists so a prototype tester can supply their own key without that key
+    becoming process state. ADK's `Gemini.api_client` is a `cached_property`
+    that constructs `Client()` with no credentials, which makes google-genai
+    fall back to `GEMINI_API_KEY` in the environment — process-global, and
+    therefore unusable when two callers with different keys are in flight.
+
+    That case is real here, not hypothetical: `local_server.analyze` fans a
+    contract's states out with `asyncio.gather`, so mutating `os.environ`
+    per request could spend one tester's key on another tester's request.
+    Overriding the property moves the credential onto the instance, and each
+    instance builds its own client — there is no shared state left to race on.
+    """
+
+    api_key: str
+
+    @cached_property
+    def api_client(self) -> Client:
+        return Client(
+            api_key=self.api_key,
+            http_options=types.HttpOptions(
+                headers=self._tracking_headers(),
+                retry_options=self.retry_options,
+            ),
+        )
+
+
+def build_agent(api_key: str | None = None) -> Agent:
+    """Build the licensure agent, optionally against a caller-supplied key.
+
+    With no key this returns the shared `root_agent`, which reads its
+    credential from the environment — the path the eval suite, the unit tests,
+    and the normal deployment all use, unchanged.
+
+    With a key it returns a fresh agent whose model holds that credential and
+    nothing else does. The instruction, the tools, and the output-boundary
+    callback are identical either way: a tester running on their own key is
+    exercising the same agent, not a relaxed copy of it.
+    """
+    if not api_key:
+        return root_agent
+    return Agent(
+        name="root_agent",
+        after_model_callback=after_model_callback,
+        model=KeyedGemini(model=MODEL_NAME, api_key=api_key, retry_options=_RETRY),
+        instruction=INSTRUCTION,
+        tools=[normalize_contract_states, lookup_state_requirement, assign_status],
+    )
+
+
 root_agent = Agent(
     name="root_agent",
     after_model_callback=after_model_callback,
-    model=Gemini(
-        # Pinned, not floating. `gemini-flash-latest` would let the model shift
-        # under the eval suite, making a prompt regression indistinguishable
-        # from a model change. R-AMBIG-01 measures prompt quality, so the model
-        # must hold still. See docs/DESIGN_SPEC.md §11.
-        #
-        # Why 3.5 and not 3.6: free-tier quotas are per-model, and
-        # gemini-3.6-flash carries an unusually tight 20 requests/day that a
-        # single suite run exhausts. 3.5-flash is also stable and has its own
-        # allowance. Pro was ruled out empirically — gemini-3.1-pro-preview and
-        # gemini-2.5-pro both 429 on the free tier, and Pro models were removed
-        # from that tier in April 2026.
-        model="gemini-3.5-flash",
-        retry_options=types.HttpRetryOptions(attempts=3),
-    ),
+    model=Gemini(model=MODEL_NAME, retry_options=_RETRY),
     instruction=INSTRUCTION,
     tools=[normalize_contract_states, lookup_state_requirement, assign_status],
 )
