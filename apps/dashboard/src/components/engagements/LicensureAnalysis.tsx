@@ -361,6 +361,33 @@ export function LicensureAnalysis({ contractId, saved }: Props) {
         ) : null}
       </div>
 
+      {/*
+        The public deployment runs in mock mode, where these drafts are real
+        agent output that was recorded rather than generated on the spot — the
+        agent is a separate Python service with a server-side model key and a
+        database behind it, none of which run on the static host.
+
+        Saying so in the product rather than only in the video is the honest
+        version: a visitor should not have to guess whether they are watching a
+        live model call. The pointer gives them a way to run it for real on
+        their own key instead.
+      */}
+      {USE_MOCK && (
+        <div className="telecred-demo">
+          <strong>Demo mode.</strong> These results are real agent output, recorded — the
+          live agent runs as a separate service with its own model key, which this
+          public deployment does not host. To watch it run on your own key, see{' '}
+          <a
+            href="https://github.com/jalanbyers/schissel-practice-ops#run-the-agent-yourself"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Run the agent yourself
+          </a>
+          .
+        </div>
+      )}
+
       {!ready && (
         <div className="empty-mini">
           Save this engagement first — analysis is stored against the contract.
