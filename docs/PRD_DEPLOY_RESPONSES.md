@@ -11,6 +11,17 @@ Grounded in the build as of 2026-07-23: 6/6 eval cases passing, 113 agent unit t
 
 Yes, I would pilot it — as an advisory tool for a single physician, on the frozen synthetic dataset, with the physician approving every result. In that shape it is ready: the agent classifies each state, escalates the ambiguous one for the right reason, refuses to misstate a status or claim authorization, and nothing it produces reaches the dashboard without the physician's sign-off. The full loop runs end to end.
 
+Against the six readiness checks:
+
+| Check | Verdict |
+|---|---|
+| Evals pass | **Yes.** 6/6 cases, deterministic scoring, plus 115 unit tests. The acceptance case fails the build on its own if the agent stops catching Ohio's defective language from the prose. |
+| Boundary enforced in the product | **Yes, structurally.** The status is computed from the records by date arithmetic, so the model cannot be argued into one. The agent has no tool that can submit, publish, contact a board, or declare me authorized. A phrase filter sits on top, and I have measured its limit — see the risk row. |
+| Owners named | **Yes, and it is one person.** I am the operator, the escalation owner, and the decision owner. That is honest for a solo practice, and it is also the pilot's biggest weakness: there is nobody to catch me rubber-stamping. |
+| Metrics with thresholds | **Written, not instrumented.** Every signal in the monitoring row has a number and a triggered action. They live in this document rather than in an alert, and I would not run stage two without wiring them up. |
+| Rollback exists | **Yes, and it is genuinely reversible.** Pause is not clicking the button; the hard switch fails closed with an explicit 503; the manual process never stopped; and no draft can reach a licence record, so a rollback leaves no bad data. Detail in the pilot row. |
+| Privacy reviewed | **Reasoned, not formally reviewed.** The narrowing below is my own data-classification decision. This capstone is synthetic end to end; a real pilot would require a formal privacy review before it started, not after. |
+
 What still needs to be true before a launch on real data, honestly:
 
 First, the data boundary has to be settled, and I have settled it. The repository's original rule said anything touching license documents stays off the cloud agent. I am narrowing that rule rather than leaving it ambiguous: the agent works only with structured license *records* — state code, board name and URL, a last-checked date, and requirement text — which carry no patient information and no individually identifiable health information. The physician's own license status is practice-operations data, not patient data. Contract PDFs, scanned license images, and billing records stay off the cloud agent, which is what that rule was actually written to protect. That narrowing is what makes a cloud deployment defensible, and a real launch would want it written down as a data-classification decision with sign-off rather than left implicit.
@@ -62,21 +73,36 @@ The agent has no tool that can submit an application, contact a board, publish t
 
 The metric pair from Discovery is the backbone: classification accuracy against a known-correct state set, and escalation precision — does it flag the genuinely ambiguous states and *not* over-escalate the clean ones. Both drift over time as state rules change, so I would re-run them on a refreshed frozen set on a schedule, not just once.
 
-Beyond accuracy, the signals I would watch:
+A signal nobody acts on is not monitoring, so each one below has a number attached and a decision it forces. These are the thresholds I would set going in, chosen to be tripped early rather than to look good — I would rather investigate a false alarm than miss a missed escalation.
 
-**Physician override rate.** Every time the physician's decision disagrees with the agent's proposal it is already captured. A rising override rate is the earliest sign the agent is losing calibration, and each override is a labeled example of where it was wrong.
+**Quality — is it still right?**
 
-**Escalation rate and mix.** A sudden drop in escalations could mean the agent has started acting on things it should flag; a spike could mean over-escalation that trains the physician to ignore flags. Both are bad in different ways.
+| Signal | Threshold | Action |
+|---|---|---|
+| Physician override rate (edit or reject) | >20% over a rolling 20 drafts | Stop relying on output; re-run the eval suite; treat the overrides as a labeled failure set |
+| Eval suite | anything below 6/6 | Stop using the agent's output until the failing case is fixed. Re-run monthly, and after *any* model, prompt, or data change |
+| Missed escalation — a state the physician escalates that the agent passed | any single instance | Becomes a new eval case before the next run |
 
-**Requirement freshness.** The share of records aging past the 90-day window, so the underlying data is refreshed before it silently starts forcing everything to human review.
+**Value — is it worth using?**
 
-**Refusal-filter triggers.** How often the runtime boundary filter actually fires. A nonzero rate means the model is attempting authorization or legal-advice language — worth knowing even though it is being blocked.
+| Signal | Threshold | Action |
+|---|---|---|
+| Escalation rate | outside 5–40% over 20 states (baseline is ~17%: one state in six) | Below the floor, it may be acting on things it should flag; above the ceiling, over-escalation is training the physician to ignore flags. Either way, investigate before the next contract |
+| Time from analysis to physician decision | >48h median | The tool is not fitting the workflow — a usage problem, not a model problem |
+| Would the physician keep it? | asked directly, every two weeks | A "no" ends the pilot. This is the most honest metric available and the easiest to skip |
 
-**Operational health.** Model error and rate-limit rates, latency per analysis, and analyses that failed to complete.
+**Risk — the hard zeros.**
 
-I would also review the audit log periodically — not as a metric but as a qualitative check on whether approvals, edits, and escalations look like careful review or like rubber-stamping.
+| Signal | Threshold | Action |
+|---|---|---|
+| Agent output asserting authorization or giving legal advice | **any occurrence** | Halt. This is the one failure with no acceptable rate |
+| Refusal-filter firings | any | Read the transcript. ≥3 in a week means a prompt regression, not noise |
+| Requirement freshness | >25% of records past 90 days | Refresh before the next run. Any record past 180 days blocks analysis outright |
+| Failed or errored analyses | >2 in a day, or p95 latency >60s for a three-state contract | Check quota and model status before the physician assumes the tool is broken |
 
-Honestly, none of this is instrumented yet. The prototype produces the raw signals — the override record and the audit log exist — but wiring them into dashboards and alerts is launch scaffolding I have not built.
+I would also read the audit log periodically — not as a metric but as a qualitative check on whether approvals look like careful review or like rubber-stamping. A physician approving five states in ninety seconds is a finding even if every status was right.
+
+Honestly, none of this is instrumented yet. The prototype emits the raw signals — the override record, the audit log, and the eval suite all exist and run — but the thresholds above live in this document rather than in an alert. Wiring them up is launch scaffolding I have not built, and I would not run stage two without it.
 
 ---
 
@@ -100,7 +126,30 @@ Deciding what to improve next is then a ranking question: fix whatever the overr
 
 The smallest safe launch is essentially what exists now, run for real by one physician:
 
-**Stage one — advisory only, frozen data, one physician.** A single telemedicine physician uses it for their own contracts against the frozen, source-linked five-state dataset. The agent advises; the physician approves everything; nothing is submitted, nothing is posted without sign-off, no board is contacted. This stage carries almost no downside because the agent cannot take an outward action — the worst case is a draft the physician rejects. It is enough to prove the loop is useful and to start collecting real override data.
+**Stage one — advisory only, frozen data, one physician.** Small, reversible, observed, with the numbers fixed before it starts:
+
+- **Who:** one physician — me — as the sole user, reviewer, and decision owner.
+- **How many:** the states named in my own signed and prospective contracts, roughly 3–6 states per contract across 2–3 contracts. Call it 15 state analyses total.
+- **How long:** four weeks, or one contract cycle, whichever ends first.
+- **Cases in:** state licensure requirement analysis for the six states in the frozen dataset (CA, FL, TX, NC, OH, AZ), against a stated planned first patient-care date.
+- **Cases explicitly out:** any state not in the frozen set; contract PDFs, scanned licence images, and billing records (they stay off the cloud agent entirely); any question of whether I *may* practise somewhere; anything involving a second physician's data.
+- **What "succeeded" means:** every draft reviewed within 48 hours; classification agreeing with my own read on at least 90% of states; no more than one escalation in five turning out to be a non-issue; zero instances of the agent asserting authorization; and — the one that actually decides it — at the end of four weeks I would rather keep using it than go back to reading board sites by hand.
+
+The stage carries almost no downside because the agent cannot take an outward action. The worst case is a draft I reject.
+
+**Rollback — how I stop it.**
+
+*Pause* is immediate and needs no deploy: the agent only runs when I click Analyze. There is no scheduler, no background job, nothing running unattended, so not clicking it is a complete stop.
+
+*The harder switch* is stopping the agent service or unsetting `LICENSURE_AGENT_URL`. The agent is a separate service the portal calls over HTTP, and when it is unreachable the API returns a 503 that says plainly "No analysis was recorded" rather than surfacing a partial result that could be mistaken for an analysis. It fails closed, and it says so. The rest of the portal — licensing, credentialing, engagements, finances, compliance — is untouched, because none of it depends on the agent.
+
+*Falling back* costs nothing, because the manual process never stopped existing. The licensing page, the per-state reference docs, and the renewal dates are all still there; they were the workflow before the agent, and they remain the workflow without it.
+
+*There is nothing to unwind.* No draft ever becomes a record without my explicit approval — the draft table has no write path to the licensing footprint at all. Pending drafts can be discarded without touching a single licence. A rollback leaves no bad data behind, which is the property that makes it genuinely reversible rather than nominally reversible.
+
+*Diagnosing* survives the rollback: the audit log and the agent's recorded proposals persist, so stopping the tool does not destroy the evidence needed to work out what went wrong.
+
+*Returning* is gated, not casual: the failing case goes into the eval suite first, and the agent comes back only when it is 6/6 again.
 
 **Stage two — widen the data.** Replace the frozen set with live, source-checked board data for more states, with a real process behind the 90-day freshness rule. The agent's behavior does not change; the inputs get bigger and current. Gate this on the monitoring being in place, because now staleness is a live risk rather than a fixed fixture.
 
