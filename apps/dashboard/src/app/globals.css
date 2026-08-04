@@ -104,14 +104,11 @@ body {
   overflow-y: auto;
 }
 .brand { display: flex; align-items: center; gap: 11px; padding: 6px 8px 18px; }
-.brand-mark {
-  width: 34px; height: 34px; border-radius: 9px; flex: none;
-  background: var(--primary); color: #fff;
-  display: grid; place-items: center; font-weight: 600; font-size: 15px;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
-}
 .brand-name { font-weight: 600; font-size: 14px; letter-spacing: -.01em; line-height: 1.15; }
-.brand-sub  { font-size: 11px; color: var(--ink-3); }
+.brand-sub  { font-size: 11px; color: var(--ink-2); }
+/* ".ai" tinted so the wordmark reads as a product name. --primary measures
+   5.9:1 on the sidebar surface; --ink-3 would not have cleared AA here. */
+.brand-ai   { color: var(--primary); font-weight: 500; }
 
 .nav { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
 .nav-label {

@@ -7,7 +7,8 @@ import {
   Briefcase, BarChart2, ShieldAlert, Settings2,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { usePracticeProfile } from '@/components/providers/SettingsContext';
+import { BrandMark, BrandWordmark } from '@/components/shell/BrandMark';
+import { BRAND } from '@/lib/brand';
 import { useLicenses } from '@/hooks/use-licenses';
 import { usePayers } from '@/hooks/use-payers';
 import { useEngagements } from '@/hooks/use-engagements';
@@ -34,7 +35,6 @@ interface NavItem {
 
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
-  const { profile } = usePracticeProfile();
 
   // Fetch live counts from the same query cache as the workspace pages.
   // These are background fetches — they don't block rendering.
@@ -56,7 +56,6 @@ export function Sidebar({ user }: SidebarProps) {
       count: checklist.filter((c: any) => c.status !== 'done').length },
   ];
 
-  const initial  = profile.name.charAt(0).toUpperCase();
   const isActive = (href: string) =>
     pathname === href || (href !== '/overview' && pathname.startsWith(href));
 
@@ -64,10 +63,10 @@ export function Sidebar({ user }: SidebarProps) {
     <aside className="sidebar">
       {/* Brand block */}
       <div className="brand">
-        <div className="brand-mark">{initial}</div>
+        <BrandMark size={34} />
         <div>
-          <div className="brand-name">{profile.name}</div>
-          <div className="brand-sub">{profile.entity}</div>
+          <div className="brand-name"><BrandWordmark /></div>
+          <div className="brand-sub">{BRAND.tagline}</div>
         </div>
       </div>
 

@@ -18,7 +18,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Schissel Health Status',
+  title: 'Telemed.ai · Global Licensing Platform',
   description: 'Practice operations dashboard — Schissel Medicine, PLLC',
 };
 
