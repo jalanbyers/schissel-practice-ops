@@ -31,7 +31,7 @@ export const MOCK_SETTINGS = {
   name: 'Schissel Health Status',
   entity: 'Schissel Medicine, PLLC',
   homeState: 'NH',
-  today: 'June 1, 2026',
+  today: 'August 5, 2026',
 };
 
 export const MOCK_KPIS: MockKpi[] = [

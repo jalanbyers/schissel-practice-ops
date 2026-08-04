@@ -1,15 +1,18 @@
 import { Card } from '@/components/ui/Card';
 import { Check } from 'lucide-react';
 import type { MockCheckItem } from '@/lib/mock-data';
+import { daysUntil } from '@/lib/date-helpers';
 
 interface ComplianceChecklistProps {
   checklist: MockCheckItem[];
 }
 
-const TODAY = new Date('2026-06-01');
+// Was a second, independent `new Date('2026-06-01')`. It survived the demo clock
+// moving and quietly kept computing from June, so this widget disagreed with every
+// other date on the page. One clock, in date-helpers.
 const isSoon = (date: string | null) => {
-  if (!date || !date.includes('-')) return false;
-  return new Date(date).getTime() - TODAY.getTime() < 14 * 864e5;
+  const d = daysUntil(date);
+  return d != null && d < 14;
 };
 
 export function ComplianceChecklist({ checklist }: ComplianceChecklistProps) {

@@ -17,7 +17,7 @@ interface TxDrawerProps {
 function blank(type: TxType = 'expense'): LedgerEntry {
   return {
     id: uid(),
-    date: '2026-06-01',
+    date: '2026-08-05',
     type,
     category: type === 'income' ? INCOME_CATEGORIES[0] : EXPENSE_CATEGORIES[0],
     source: '',
