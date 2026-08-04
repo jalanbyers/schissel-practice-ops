@@ -440,6 +440,28 @@ body {
 @media (max-width: 720px) {
   .col-3 { grid-column: span 12; }
   .search { display: none; }
+
+  /* Stack the section header.
+     `.sec-head` was a non-wrapping flex row, so on a phone `.sec-actions`
+     (a 220px search plus a ~110px primary action) overflowed the main column
+     and was clipped by `.main { overflow: hidden }` — the search field and
+     the primary action were unreachable rather than merely cramped. Wrapping
+     puts the toolbar on its own full-width line, and the search flexes to
+     whatever is left instead of insisting on 220px.
+     Applies to every workspace: one shared SectionHeader renders them all. */
+  .sec-head { flex-wrap: wrap; align-items: flex-start; gap: 12px; }
+  .sec-actions { margin-left: 0; width: 100%; }
+  .lic-toolbar { width: 100%; }
+  .lic-search { flex: 1 1 auto; width: auto; min-width: 0; }
+
+  /* Draft card header.
+     Chevron + state code + state name + analysis chip + review pill does not
+     fit one phone-width line, and `.draft-name { flex: 1 }` could not absorb
+     it: a flex item defaults to `min-width: auto`, so it refuses to shrink
+     below its own content and pushes the trailing pill off instead. Allow the
+     row to wrap, which moves the trailing pill to a second line rather than
+     truncating the state name to make room. */
+  .draft-head { flex-wrap: wrap; row-gap: 6px; }
 }
 
 /* ==========================================================================
