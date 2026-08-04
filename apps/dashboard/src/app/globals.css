@@ -815,24 +815,35 @@ select.input {
    overflow:hidden already clips the padding at max-height 0, so there is
    nothing to gain by removing it.
 
-   Separate curves per direction, following the standard expand/collapse
-   pairing: decelerate on the way in so it settles, accelerate on the way out
-   so it clears quickly. */
+   Height alone reads mechanically — the content appears at full strength the
+   moment there is room for it. Fading the body alongside the height is what
+   actually makes this feel smooth: on open the fade trails the expansion
+   slightly so content arrives into space already made for it; on close it
+   leads, so the body is gone before the card finishes shutting. */
 .draft-body-wrap {
   overflow: hidden;
-  /* collapsing — accelerate out */
-  transition: max-height .22s cubic-bezier(.4, 0, 1, 1);
+  /* collapsing */
+  transition: max-height .26s cubic-bezier(.4, 0, .2, 1);
 }
 .draft-body-wrap.open {
-  /* expanding — decelerate in */
-  transition: max-height .3s cubic-bezier(0, 0, .2, 1);
+  /* expanding — a longer, softer settle */
+  transition: max-height .36s cubic-bezier(.16, 1, .3, 1);
 }
 .draft-body-wrap > .draft-body {
   padding: 2px 12px 12px 26px;
   border-top: 1px solid var(--line);
+  opacity: 0;
+  transition: opacity .14s ease-out;
+}
+.draft-body-wrap.open > .draft-body {
+  opacity: 1;
+  transition: opacity .28s ease-in .06s;
 }
 @media (prefers-reduced-motion: reduce) {
-  .draft-body-wrap, .draft-body-wrap.open { transition: none; }
+  .draft-body-wrap,
+  .draft-body-wrap.open,
+  .draft-body-wrap > .draft-body,
+  .draft-body-wrap.open > .draft-body { transition: none; }
 }
 .draft-head svg:first-child { transition: transform .2s ease; }
 .dgroup-mini { margin: 11px 0; }

@@ -425,7 +425,17 @@ export function LicensureAnalysis({ contractId, saved }: Props) {
 
           {isLoading && <div className="empty-mini">Loading drafts…</div>}
 
-          {drafts?.map((d) => <DraftCard key={d.id} draft={d} contractId={contractId} />)}
+          {/*
+            Alphabetical by state. The API orders by creation time, but the
+            agent analyzes states in parallel so they all land on the same
+            timestamp — leaving the order effectively arbitrary and liable to
+            shuffle between runs. Sorting here keeps the list stable and
+            matches the alphabetical state picker above it.
+          */}
+          {drafts
+            ?.slice()
+            .sort((a, b) => a.state.localeCompare(b.state))
+            .map((d) => <DraftCard key={d.id} draft={d} contractId={contractId} />)}
 
           {drafts?.length ? (
             <p className="req-note">
