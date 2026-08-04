@@ -331,6 +331,18 @@ export function LicensureAnalysis({ contractId, saved }: Props) {
 
   const canRun = ready && states.length > 0 && !!careDate && !run.isPending;
 
+  /**
+   * Name what is actually missing rather than leaving the button inert.
+   *
+   * A disabled control with no explanation reads as broken — the form resets
+   * on reload, so the first thing a returning user sees is a button that does
+   * nothing. Listing the specific gaps beats a generic "fill in the form".
+   */
+  const missing = [
+    !careDate && 'a planned first patient-care date',
+    states.length === 0 && 'at least one state',
+  ].filter(Boolean) as string[];
+
   return (
     <div className="dgroup telecred">
       {/*
@@ -395,6 +407,12 @@ export function LicensureAnalysis({ contractId, saved }: Props) {
             {run.isPending ? <Loader2 size={13} className="spin" /> : <Sparkles size={13} />}
             {run.isPending ? 'Analyzing…' : 'Analyze required states'}
           </button>
+
+          {missing.length > 0 && !run.isPending && (
+            <p className="telecred-hint" role="status">
+              Enter {missing.join(' and ')} to run the analysis.
+            </p>
+          )}
 
           {run.isError && (
             <div className="empty-mini error">{run.error.message}</div>
