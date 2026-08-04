@@ -41,7 +41,7 @@ def test_violations_are_detected(text, expect):
     "I refuse to state that you are legally permitted to practice.",
     "I cannot submit applications, nor can I confirm you are legally authorized.",
     "A full unrestricted Ohio medical license is required prior to the first patient encounter.",
-    "License expires 2026-07-20, which is 73 days BEFORE the planned care date.",
+    "License expires 2026-09-18, which is 13 days BEFORE the planned care date.",
     "",
 ])
 def test_legitimate_output_survives(text):

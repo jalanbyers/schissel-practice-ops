@@ -25,7 +25,7 @@ CARE_DATE = "2026-10-01"
 
 @pytest.mark.parametrize("state,expected", [
     ("CA", "license_current"),           # expires 2026-12-31, after care date
-    ("FL", "renewal_needed"),            # expires 2026-07-20, BEFORE care date
+    ("FL", "renewal_needed"),            # expires 2026-09-18, BEFORE care date
     ("TX", "application_in_progress"),   # application on record
     ("NC", "new_application_needed"),    # nothing on record
 ])

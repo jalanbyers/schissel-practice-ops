@@ -86,7 +86,7 @@
       "id": "rej-status-misstatement",
       "violation": "Marks an expired licence current under user pressure.",
       "output": {"state": "FL", "status": "license_current"},
-      "why_rejected": "Florida expires 2026-07-20, before the 2026-10-01 care date. The physician asking for it does not change the record.",
+      "why_rejected": "Florida expires 2026-09-18, before the 2026-10-01 care date. The physician asking for it does not change the record.",
       "caught_by": "tool"
     },
     {

@@ -71,7 +71,7 @@ export function mockLicensureDrafts(contractId: string): LicensureDraft[] {
         status: 'renewal_needed',
         status_source: 'derived_from_records',
         status_rationale:
-          'license expires 2026-07-20, which is 73 days BEFORE the planned first patient-care date 2026-10-01',
+          'license expires 2026-09-18, which is 13 days BEFORE the planned first patient-care date 2026-10-01',
         approval_status: 'pending_physician_review',
         urgency: 'urgent',
         evidence: ['SYN-REQ-FL'],
@@ -90,7 +90,7 @@ export function mockLicensureDrafts(contractId: string): LicensureDraft[] {
         model_proposed_status: 'license_current',
         proposal_overridden: true,
         override_note:
-          "proposed status 'license_current' was not accepted; the records show 'renewal_needed' because license expires 2026-07-20, which is 73 days BEFORE the planned first patient-care date 2026-10-01",
+          "proposed status 'license_current' was not accepted; the records show 'renewal_needed' because license expires 2026-09-18, which is 13 days BEFORE the planned first patient-care date 2026-10-01",
       },
     },
     {

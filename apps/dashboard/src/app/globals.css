@@ -931,10 +931,13 @@ select.input {
   vertical-align: bottom;
   margin-left: 2px;
 }
+/* Measured against the composited panel background (#cfdaf6): --ink-3 gave
+   2.50:1, below the 4.5:1 WCAG AA threshold for text this size. --ink-2
+   gives 5.16:1. */
 .telecred-tagline {
   margin: 3px 0 0;
   font-size: 11.5px;
-  color: var(--ink-3);
+  color: var(--ink-2);
 }
 .telecred-meta {
   position: absolute;

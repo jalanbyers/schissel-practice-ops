@@ -46,7 +46,7 @@ export const MOCK_STATES: MockState[] = [
   { code: 'MA', name: 'Massachusetts',  status: 'active',   date: '2026-12-15',      imlc: false },
   { code: 'CA', name: 'California',     status: 'active',   date: '2026-12-31',      imlc: false },
   { code: 'TX', name: 'Texas',          status: 'progress', date: 'Submitted Apr 18',imlc: false },
-  { code: 'FL', name: 'Florida',        status: 'expiring', date: '2026-07-20',      imlc: false },
+  { code: 'FL', name: 'Florida',        status: 'expiring', date: '2026-09-18',      imlc: false },
   { code: 'NY', name: 'New York',       status: 'progress', date: 'Submitted May 02',imlc: false },
   { code: 'IL', name: 'Illinois',       status: 'active',   date: '2027-01-31',      imlc: true  },
   { code: 'GA', name: 'Georgia',        status: 'expiring', date: '2026-08-10',      imlc: true  },

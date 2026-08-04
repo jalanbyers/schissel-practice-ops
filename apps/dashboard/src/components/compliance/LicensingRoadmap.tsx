@@ -24,7 +24,7 @@ interface Phase {
 
 export const ROADMAP_STEPS: RoadmapStep[] = [
   // Phase 1 — NH home state (most foundational, earliest dates)
-  { id: 'rm-p1-s0', label: 'Renew FL license before Jul 20 expiration',              group: 'Licensing', date: '2026-06-22', desc: 'Expiring soonest — initiate renewal at flhealthsource.gov immediately. Late fee jumps to $729 after expiration.' },
+  { id: 'rm-p1-s0', label: 'Renew FL license before Sep 18 expiration',              group: 'Licensing', date: '2026-06-22', desc: 'Expiring soonest — initiate renewal at flhealthsource.gov immediately. Late fee jumps to $729 after expiration.' },
   { id: 'rm-p1-s1', label: 'Confirm NH designated as IMLC home state',               group: 'Licensing', date: '2026-06-25', desc: 'Verify NH is the registered home state in the Compact Commission portal at imlcc.net — all compact privileges depend on this.' },
   { id: 'rm-p1-s2', label: 'Verify DEA registration current (NH address)',            group: 'Licensing', date: '2026-06-28', desc: 'NH board checks DEA status at every renewal. Confirm the registered address matches the NH practice address.' },
   { id: 'rm-p1-s3', label: 'Confirm NH PDMP account active',                         group: 'Licensing', date: '2026-07-01', desc: 'NH PDMP (prescription monitoring) account must be in good standing before the biennial renewal is processed.' },
@@ -77,7 +77,7 @@ const PHASES: Phase[] = [
       { code: 'MA', note: 'active · Dec 15' },
       { code: 'CA', note: 'active · Dec 31' },
       { code: 'TX', note: 'in progress' },
-      { code: 'FL', note: 'expiring · Jul 20' },
+      { code: 'FL', note: 'expiring · Sep 18' },
       { code: 'NY', note: 'in progress' },
       { code: 'NC', note: 'not yet applied' },
     ],
