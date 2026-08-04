@@ -53,3 +53,6 @@ packages/licensure-agent/.agents-cli-scripts/
 # that do not carry packages/licensure-agent/.gitignore)
 __pycache__/
 *.py[cod]
+
+# Faculty course material — the kit itself instructs that this stays out of the repo.
+deploy-companion/
