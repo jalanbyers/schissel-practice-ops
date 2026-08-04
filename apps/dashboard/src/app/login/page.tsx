@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { ShieldCheck } from 'lucide-react';
+import { BrandMark, BrandWordmark } from '@/components/shell/BrandMark';
+import { BRAND } from '@/lib/brand';
 
 /**
  * Public login landing page.
@@ -28,20 +29,17 @@ export default function LoginPage() {
         width: '100%',
         boxShadow: 'var(--shadow-hover)',
       }}>
-        <div style={{
-          width: 52, height: 52, borderRadius: 14,
-          background: 'var(--primary)', color: '#fff',
-          display: 'grid', placeItems: 'center',
-          margin: '0 auto 20px',
-        }}>
-          <ShieldCheck size={26} />
+        <div style={{ display: 'flex', justifyContent: 'center', margin: '0 auto 20px' }}>
+          <BrandMark size={52} />
         </div>
 
         <h1 style={{ fontSize: 22, fontWeight: 600, margin: '0 0 6px', letterSpacing: '-.01em' }}>
-          Schissel Health Status
+          <BrandWordmark />
         </h1>
-        <p style={{ fontSize: 13, color: 'var(--ink-3)', margin: '0 0 28px' }}>
-          Practice operations dashboard · Schissel Medicine, PLLC
+        <p style={{ fontSize: 13, color: 'var(--ink-2)', margin: '0 0 28px' }}>
+          {/* No tenant name here — this page renders before we know who is
+              signing in, and it wrapped to an orphaned line anyway. */}
+          {BRAND.tagline}
         </p>
 
         <Link

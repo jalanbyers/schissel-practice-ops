@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { AlertTriangle, Check, ChevronDown, ChevronRight, Loader2, ShieldCheck, Sparkles } from 'lucide-react';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { US_GRID, US_NAMES } from '@/lib/us-grid';
@@ -71,10 +71,21 @@ function ClarityRow({ check }: { check: ClarityCheck }) {
   );
 }
 
-const DECIDED_LABEL: Record<string, string> = {
-  approved:  'Approved by you',
-  rejected:  'Rejected',
-  escalated: 'Escalated to an expert',
+/**
+ * The physician's review state, kept visually separate from the agent's
+ * analysis status.
+ *
+ * Two different things sit side by side in the card header — what the agent
+ * concluded ("Renewal needed") and where the physician's decision stands
+ * ("Approved"). They must not read as one label. The analysis status uses the
+ * filled StatusPill; review state uses an outlined pill, so the shape itself
+ * distinguishes "what the agent found" from "what you decided".
+ */
+const REVIEW_STATE: Record<string, { label: string; tone: string }> = {
+  pending:   { label: 'Pending review', tone: 'wait' },
+  approved:  { label: 'Approved',       tone: 'ok' },
+  rejected:  { label: 'Rejected',       tone: 'muted' },
+  escalated: { label: 'Escalated',      tone: 'info' },
 };
 
 function DraftCard({ draft, contractId }: { draft: LicensureDraft; contractId: string }) {
@@ -83,6 +94,25 @@ function DraftCard({ draft, contractId }: { draft: LicensureDraft; contractId: s
   const [noteFor, setNoteFor] = useState<ReviewDecision | null>(null);
   const review = useReviewDraft(contractId);
   const decided = draft.approvalStatus !== 'pending';
+
+  /**
+   * Measure the body so the transition runs over its real height.
+   *
+   * A fixed max-height ceiling (5000px against ~2.1k of content) meant most of
+   * the transition was spent on height the eye never sees — the card appeared
+   * to lag on open and to hang before moving on close, and no easing curve
+   * could fix that because the curve was being applied to mostly-invisible
+   * range. Measuring makes the curve act on exactly the distance travelled.
+   *
+   * Recomputed when the note field appears or the decision lands, since both
+   * change the body's height while it is open.
+   */
+  const bodyRef = useRef<HTMLDivElement | null>(null);
+  const [bodyHeight, setBodyHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    setBodyHeight(open ? (bodyRef.current?.scrollHeight ?? 0) : 0);
+  }, [open, noteFor, review.isPending, draft.approvalStatus, draft.payload]);
 
   /**
    * Reject and escalate ask for a note first — a decision to override or defer
@@ -94,12 +124,23 @@ function DraftCard({ draft, contractId }: { draft: LicensureDraft; contractId: s
       setNoteFor(decision);
       return;
     }
-    review.mutate({ draftId: draft.id, decision, note: note || undefined, payload: draft.payload });
+    review.mutate(
+      { draftId: draft.id, decision, note: note || undefined, payload: draft.payload },
+      {
+        // Collapse once the decision is recorded. The card is finished with —
+        // closing it confirms the write landed and returns the physician to
+        // the list of states still waiting on them, rather than leaving a
+        // decided card open with its actions gone.
+        onSuccess: () => setOpen(false),
+      },
+    );
     setNoteFor(null);
     setNote('');
   };
   const p = draft.payload;
   const meta = STATUS_LABEL[p.status] ?? { label: p.status, variant: 'idle' };
+  const reviewState =
+    REVIEW_STATE[draft.approvalStatus] ?? REVIEW_STATE['pending']!;
   const condition4 = p.clarity_checks?.find((c) => c.condition_number === 4);
   const conflictSpan = condition4?.quoted_span;
 
@@ -111,13 +152,21 @@ function DraftCard({ draft, contractId }: { draft: LicensureDraft; contractId: s
         <span className="draft-name">{US_NAMES[draft.state] ?? draft.state}</span>
         <StatusPill variant={meta.variant as never} label={meta.label} />
         {p.urgency === 'urgent' && <span className="mini-badge warn">Urgent</span>}
-        <span className="draft-pending">
-          {decided ? DECIDED_LABEL[draft.approvalStatus] : 'Pending your review'}
-        </span>
+        <span className={`review-pill ${reviewState.tone}`}>{reviewState.label}</span>
       </button>
 
-      {open && (
-        <div className="draft-body">
+      {/*
+        Always rendered so the open/close can animate. A conditional mount has
+        nothing to transition out of, so the wrapper animates its grid row from
+        0fr to 1fr and the inner element carries the padding — otherwise the
+        padding keeps the collapsed card a few pixels tall.
+      */}
+      <div
+        className={`draft-body-wrap${open ? ' open' : ''}`}
+        style={{ maxHeight: bodyHeight }}
+        aria-hidden={!open}
+      >
+        <div className="draft-body" ref={bodyRef}>
           {/* The agent declining to say what it was asked to say. */}
           {p.proposal_overridden && (
             <div className="override-note">
@@ -244,7 +293,7 @@ function DraftCard({ draft, contractId }: { draft: LicensureDraft; contractId: s
             {p.evidence?.length ? <span className="mono">{p.evidence.join(', ')}</span> : null}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -281,6 +330,18 @@ export function LicensureAnalysis({ contractId, saved }: Props) {
     setStates((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
 
   const canRun = ready && states.length > 0 && !!careDate && !run.isPending;
+
+  /**
+   * Name what is actually missing rather than leaving the button inert.
+   *
+   * A disabled control with no explanation reads as broken — the form resets
+   * on reload, so the first thing a returning user sees is a button that does
+   * nothing. Listing the specific gaps beats a generic "fill in the form".
+   */
+  const missing = [
+    !careDate && 'a planned first patient-care date',
+    states.length === 0 && 'at least one state',
+  ].filter(Boolean) as string[];
 
   return (
     <div className="dgroup telecred">
@@ -347,6 +408,12 @@ export function LicensureAnalysis({ contractId, saved }: Props) {
             {run.isPending ? 'Analyzing…' : 'Analyze required states'}
           </button>
 
+          {missing.length > 0 && !run.isPending && (
+            <p className="telecred-hint" role="status">
+              Enter {missing.join(' and ')} to run the analysis.
+            </p>
+          )}
+
           {run.isError && (
             <div className="empty-mini error">{run.error.message}</div>
           )}
@@ -358,7 +425,17 @@ export function LicensureAnalysis({ contractId, saved }: Props) {
 
           {isLoading && <div className="empty-mini">Loading drafts…</div>}
 
-          {drafts?.map((d) => <DraftCard key={d.id} draft={d} contractId={contractId} />)}
+          {/*
+            Alphabetical by state. The API orders by creation time, but the
+            agent analyzes states in parallel so they all land on the same
+            timestamp — leaving the order effectively arbitrary and liable to
+            shuffle between runs. Sorting here keeps the list stable and
+            matches the alphabetical state picker above it.
+          */}
+          {drafts
+            ?.slice()
+            .sort((a, b) => a.state.localeCompare(b.state))
+            .map((d) => <DraftCard key={d.id} draft={d} contractId={contractId} />)}
 
           {drafts?.length ? (
             <p className="req-note">

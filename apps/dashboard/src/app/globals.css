@@ -104,14 +104,11 @@ body {
   overflow-y: auto;
 }
 .brand { display: flex; align-items: center; gap: 11px; padding: 6px 8px 18px; }
-.brand-mark {
-  width: 34px; height: 34px; border-radius: 9px; flex: none;
-  background: var(--primary); color: #fff;
-  display: grid; place-items: center; font-weight: 600; font-size: 15px;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
-}
 .brand-name { font-weight: 600; font-size: 14px; letter-spacing: -.01em; line-height: 1.15; }
-.brand-sub  { font-size: 11px; color: var(--ink-3); }
+.brand-sub  { font-size: 11px; color: var(--ink-2); }
+/* ".ai" tinted so the wordmark reads as a product name. --primary measures
+   5.9:1 on the sidebar surface; --ink-3 would not have cleared AA here. */
+.brand-ai   { color: var(--primary); font-weight: 500; }
 
 .nav { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
 .nav-label {
@@ -802,7 +799,50 @@ select.input {
 .draft-name  { font-size: 12px; color: var(--ink-2); flex: 1; }
 .draft-pending { font-size: 10.5px; color: var(--ink-3); font-style: italic; }
 
-.draft-body { padding: 2px 12px 12px 26px; border-top: 1px solid var(--line); }
+/* Animated disclosure.
+   max-height comes from the component, measured from the body's scrollHeight,
+   so the curve is applied to the real distance travelled. A fixed ceiling
+   (5000px against ~2.1k of content) spent most of the transition on height the
+   eye never sees, which read as lag on open and a hang before movement on
+   close — no easing could fix that, because the easing was mostly invisible.
+
+   Padding stays CONSTANT. Toggling it with the .open class made it snap to
+   zero the instant a close began, so the content lost its left/right inset and
+   jumped sideways while the height was still animating. The wrapper's
+   overflow:hidden already clips the padding at max-height 0, so there is
+   nothing to gain by removing it.
+
+   Height alone reads mechanically — the content appears at full strength the
+   moment there is room for it. Fading the body alongside the height is what
+   actually makes this feel smooth: on open the fade trails the expansion
+   slightly so content arrives into space already made for it; on close it
+   leads, so the body is gone before the card finishes shutting. */
+.draft-body-wrap {
+  overflow: hidden;
+  /* collapsing */
+  transition: max-height .26s cubic-bezier(.4, 0, .2, 1);
+}
+.draft-body-wrap.open {
+  /* expanding — a longer, softer settle */
+  transition: max-height .36s cubic-bezier(.16, 1, .3, 1);
+}
+.draft-body-wrap > .draft-body {
+  padding: 2px 12px 12px 26px;
+  border-top: 1px solid var(--line);
+  opacity: 0;
+  transition: opacity .14s ease-out;
+}
+.draft-body-wrap.open > .draft-body {
+  opacity: 1;
+  transition: opacity .28s ease-in .06s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .draft-body-wrap,
+  .draft-body-wrap.open,
+  .draft-body-wrap > .draft-body,
+  .draft-body-wrap.open > .draft-body { transition: none; }
+}
+.draft-head svg:first-child { transition: transform .2s ease; }
 .dgroup-mini { margin: 11px 0; }
 .dgroup-mini .dgroup-title { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-3); }
 
@@ -888,10 +928,13 @@ select.input {
   vertical-align: bottom;
   margin-left: 2px;
 }
+/* Measured against the composited panel background (#cfdaf6): --ink-3 gave
+   2.50:1, below the 4.5:1 WCAG AA threshold for text this size. --ink-2
+   gives 5.16:1. */
 .telecred-tagline {
   margin: 3px 0 0;
   font-size: 11.5px;
-  color: var(--ink-3);
+  color: var(--ink-2);
 }
 .telecred-meta {
   position: absolute;
@@ -922,4 +965,33 @@ select.input {
   background: var(--info);
   border-color: var(--info);
   color: #fff;
+}
+
+/* ── Review state pill ───────────────────────────────────────────────────── */
+/* Deliberately outlined, while the agent's analysis status next to it is a
+   filled StatusPill. Two different questions — "what did the agent find" and
+   "where does your decision stand" — must not look like one label. */
+.review-pill {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .03em;
+  padding: 3px 9px;
+  border-radius: 20px;
+  border: 1px solid currentColor;
+  background: transparent;
+  white-space: nowrap;
+  flex: none;
+}
+.review-pill.wait   { color: var(--ink-3); }
+.review-pill.ok     { color: var(--ok); background: color-mix(in srgb, var(--ok) 8%, transparent); }
+.review-pill.info   { color: var(--info); background: color-mix(in srgb, var(--info) 8%, transparent); }
+.review-pill.muted  { color: var(--ink-3); background: color-mix(in srgb, var(--ink-3) 8%, transparent); opacity: .8; }
+
+/* Explains a disabled Analyze button instead of leaving it inert — the form
+   resets on reload, so this is the first thing a returning user sees. */
+.telecred-hint {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  color: var(--ink-3);
+  font-style: italic;
 }
