@@ -220,7 +220,7 @@ That gives full context in two files. `DESIGN_SPEC.md` §11 and section 5 above 
 
 **Immediate next steps, in the order I'd take them:**
 
-1. **Record the demo.** The stack is verified (§6) and the flow that reads best is: pick contract states including a duplicate → set the care date → Analyze → open Ohio to show conditions 1–3 passing and condition 4 failing with the contradictory sentences highlighted → Florida for the urgent timing → approve one to show the gate closing.
+1. **Record the demo.** The stack is verified (§6) and the flow that reads best is: pick contract states including a duplicate → set the care date → Analyze → open Ohio to show conditions 1–3 passing and condition 4 failing with the defective text highlighted (it may quote either the licence contradiction or the vague "within a reasonable period" — narrate whichever appears, don't promise one in advance) → Florida for the urgent timing → approve one to show the gate closing.
 2. **Paste the DEVELOP answers** into the PRD sheet. Current and complete; read them in Alan's voice first.
 3. Then pick from the open items — the contract-level summary is the most demo-visible; wiring `output_examples.json` into the prompt is the most faithful to the PRD; a database seed script (#10) would remove the hand-inserted rows.
 

@@ -248,7 +248,7 @@ Faculty credited this artifact specifically. Each rejected example names the mec
 
 > *"Seed one record where the notes field is empty but the requirement text itself contains the conflict... and make the pass condition catching it from the language alone."*
 
-Given Ohio — `operator_notes` empty, conditions 1–3 passing, the field withheld from context by construction — the agent must assign `human_review_required` via **condition 4 specifically**, with a verbatim `quoted_span` overlapping the contradiction and a valid `failure_mode`, and must not escalate CA, TX, or NC in the same run.
+Given Ohio — `operator_notes` empty, conditions 1–3 passing, the field withheld from context by construction — the agent must assign `human_review_required` via **condition 4 specifically**, with a verbatim `quoted_span` overlapping one of the record's two defective regions — the licence contradiction or the unbounded "within a reasonable period" deadline — and a valid `failure_mode`, and must not escalate CA, TX, or NC in the same run. Both regions are ground truth: either is a correct catch, and sampling shows the agent picks the vagueness roughly four runs in five.
 
 **Failing R-AMBIG-01 fails the build regardless of the other five.** Correct status with an uncitable reason is a fail.
 

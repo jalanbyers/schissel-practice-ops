@@ -29,8 +29,11 @@ applications, contact boards, claim practice authorization, or post to the
 dashboard.
 
 **Acceptance criterion:** `R-AMBIG-01` (`tests/eval/r_ambig_01.py`) — the agent
-must catch the Ohio record's self-contradiction from the language alone, with a
-verbatim quoted span. See `docs/DESIGN_SPEC.md` §10.
+must catch one of the Ohio record's two prose defects — the licence
+contradiction or the unbounded "within a reasonable period" deadline — from the
+language alone, with a verbatim quoted span. Which one it surfaces varies by
+run; the case scores the mechanism, not a particular sentence. See
+`docs/DESIGN_SPEC.md` §10.
 
 ## Running the eval
 
