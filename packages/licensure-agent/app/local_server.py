@@ -42,6 +42,25 @@ class AnalyzeRequest(BaseModel):
     contract_id: str = Field(description="Synthetic contract identifier.")
     states: list[str] = Field(description="Required states, as written in the contract.")
     planned_care_date: str = Field(description="ISO date of planned first patient care.")
+    api_key: str | None = Field(
+        default=None,
+        repr=False,
+        description=(
+            "Optional caller-supplied Gemini key, so a prototype tester can run the "
+            "agent on their own credential. Held for the duration of the request and "
+            "never logged, persisted, or echoed back. Omit to use the server's key."
+        ),
+    )
+
+    def __str__(self) -> str:  # pragma: no cover - defensive
+        """Never render the key, whatever logs this."""
+        return (
+            f"AnalyzeRequest(contract_id={self.contract_id!r}, states={self.states!r}, "
+            f"planned_care_date={self.planned_care_date!r}, "
+            f"api_key={'<supplied>' if self.api_key else None})"
+        )
+
+    __repr__ = __str__
 
 
 class StateResult(BaseModel):
@@ -121,10 +140,15 @@ async def analyze(request: AnalyzeRequest) -> AnalyzeResponse:
     Duplicates are collapsed before analysis — the contract may name a state
     twice, once by full name and once by code, and it should be reviewed once.
     """
-    from app.agent import normalize_contract_states
+    from app.agent import build_agent, normalize_contract_states
 
     normalized = normalize_contract_states(request.states)
-    runner = InMemoryRunner(agent=root_agent, app_name="app")
+
+    # With no key this is the shared root_agent on the server credential. With
+    # one it is a fresh agent holding that key on its model instance and
+    # nowhere else, so the gather below cannot cross one caller's key with
+    # another's. Same instruction, same tools, same output boundary either way.
+    runner = InMemoryRunner(agent=build_agent(request.api_key), app_name="app")
 
     # Analyze states concurrently rather than one after another. Each state is
     # an independent agent run with its own session, so there is nothing to
