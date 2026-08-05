@@ -83,6 +83,29 @@ for f in reversed(files):
 PYEOF
 }
 
+# ---- what gets watched after launch ----
+print_monitoring() {
+  echo
+  echo "${bold}Post-launch monitoring — thresholds that trigger action${off}"
+  rule
+  printf "  ${bold}Quality${off}\n"
+  printf "    %-42s %s\n" "Physician override rate"        "${ylw}> 20% of a rolling 20${off} → re-run evals"
+  printf "    %-42s %s\n" "Evaluation suite"               "${ylw}anything below 6/6${off} → stop using output"
+  printf "    %-42s %s\n" "Missed escalation"              "${ylw}any single instance${off} → becomes a new case"
+  printf "  ${bold}Value${off}\n"
+  printf "    %-42s %s\n" "Escalation rate"                "${ylw}outside 5-40%${off} (baseline ~17%)"
+  printf "    %-42s %s\n" "Analysis to physician decision"  "${ylw}median > 48h${off} → workflow problem"
+  printf "    %-42s %s\n" "Would the physician keep it?"   "${ylw}asked fortnightly${off} → a no ends the pilot"
+  printf "  ${bold}Risk${off}\n"
+  printf "    %-42s %s\n" "Authorization or legal claim"   "${red}any occurrence${off} → halt"
+  printf "    %-42s %s\n" "Refusal-filter firings"         "${ylw}≥3 in a week${off} → prompt regression"
+  printf "    %-42s %s\n" "Requirement freshness"          "${ylw}> 25% past 90 days${off} → refresh data"
+  rule
+  printf "  ${dim}Signals exist today; the thresholds are written, not yet instrumented.${off}\n"
+  echo
+
+}
+
 # ---- pilot plan --------------------------------------------------------------
 # Mirrors the Rollout row of docs/PRD_DEPLOY_RESPONSES.md so the sheet and the
 # screen cannot drift. The rollback list follows the kit's four-step standard —
@@ -117,7 +140,7 @@ print_plan() {
   rule
   printf "  ${dim}Then widen the data, then more physicians.${off}\n"
   printf "  ${dim}More scope - never more autonomy.${off}\n"
-  echo
+  print_monitoring
 }
 
 if [[ $PLAN_ONLY -eq 1 ]]; then
@@ -200,24 +223,5 @@ else
 fi
 printf "  ${dim}scored: %s${off}\n" "$(basename "${PRD_TRACE:-none}") + $(basename "${AMBIG_TRACE:-none}")"
 
-# ---- what gets watched after launch ----------------------------------------
-echo
-echo "${bold}Post-launch monitoring — thresholds that trigger action${off}"
-rule
-printf "  ${bold}Quality${off}\n"
-printf "    %-42s %s\n" "Physician override rate"        "${ylw}> 20% of a rolling 20${off} → re-run evals"
-printf "    %-42s %s\n" "Evaluation suite"               "${ylw}anything below 6/6${off} → stop using output"
-printf "    %-42s %s\n" "Missed escalation"              "${ylw}any single instance${off} → becomes a new case"
-printf "  ${bold}Value${off}\n"
-printf "    %-42s %s\n" "Escalation rate"                "${ylw}outside 5-40%${off} (baseline ~17%)"
-printf "    %-42s %s\n" "Analysis to physician decision"  "${ylw}median > 48h${off} → workflow problem"
-printf "    %-42s %s\n" "Would the physician keep it?"   "${ylw}asked fortnightly${off} → a no ends the pilot"
-printf "  ${bold}Risk${off}\n"
-printf "    %-42s %s\n" "Authorization or legal claim"   "${red}any occurrence${off} → halt"
-printf "    %-42s %s\n" "Refusal-filter firings"         "${ylw}≥3 in a week${off} → prompt regression"
-printf "    %-42s %s\n" "Requirement freshness"          "${ylw}> 25% past 90 days${off} → refresh data"
-rule
-printf "  ${dim}Signals exist today; the thresholds are written, not yet instrumented.${off}\n"
-echo
 
 exit $FAIL

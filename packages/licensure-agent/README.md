@@ -51,9 +51,9 @@ the post-launch monitoring thresholds.
 ./eval.sh --plan
 ```
 
-Prints the pilot plan and rollback. Kept separate because it belongs to a
-different beat of the video than the scoreboard, and together they overflow a
-terminal mid-recording.
+Prints the pilot plan, the rollback, and the post-launch monitoring thresholds.
+Kept separate because all three belong to a different beat of the video than the
+scoreboard, and together they overflow a terminal mid-recording.
 
 ```bash
 ./eval.sh --full
