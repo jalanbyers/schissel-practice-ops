@@ -1,13 +1,17 @@
 'use client';
 
 import { Search, Bell, Settings2 } from 'lucide-react';
+import { MOCK_SETTINGS } from '@/lib/mock-data';
 
 interface TopBarProps {
   title: string;
   date?: string;
 }
 
-export function TopBar({ title, date = 'June 1, 2026' }: TopBarProps) {
+// Default comes from MOCK_SETTINGS rather than a literal: a hardcoded fallback
+// here would print a different date than every badge computes from the moment
+// the demo clock moves.
+export function TopBar({ title, date = MOCK_SETTINGS.today }: TopBarProps) {
   return (
     <header className="topbar">
       <div className="crumb">{title}</div>

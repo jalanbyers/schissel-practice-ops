@@ -37,10 +37,40 @@ run; the case scores the mechanism, not a particular sentence. See
 
 ## Running the eval
 
+One command, for the demo's evidence section and for any check before a change:
+
 ```bash
-agents-cli eval run --dataset tests/eval/datasets/r-ambig-01.json
-uv run --with pytest pytest tests/unit/ -q     # structural guarantees
+./eval.sh
 ```
+
+Scores the most recent recorded traces and runs the unit suite. No model calls,
+about nine seconds — safe to run on camera. Prints the evaluation scoreboard and
+the post-launch monitoring thresholds.
+
+```bash
+./eval.sh --full
+```
+
+Regenerates traces first (6 inference calls, ~90s), then scores. Run this after
+changing the agent, not during a recording.
+
+Underneath it is three commands, if you need them individually:
+
+```bash
+uv run --with pytest pytest tests/unit/ -q
+agents-cli eval run --dataset tests/eval/datasets/r-ambig-01.json
+agents-cli eval generate --dataset tests/eval/datasets/prd-cases.json
+agents-cli eval grade --traces "$(ls -t artifacts/traces/*.json | head -1)" --metrics prd_cases
+```
+
+**The PRD suite needs `--metrics prd_cases` explicitly.** `eval_config.yaml` lists
+only `r_ambig_01` under `metrics_to_run`, so a plain `eval run` on the PRD dataset
+scores five cases with the ambiguity grader and reports a misleading `0.2000`.
+Nothing is broken when that happens — it is the wrong grader, not a regression.
+
+**Read `num_cases_error` and `num_cases_valid` before `mean_score`.** Grading is
+free and re-scores saved traces without touching the model, so an odd result can
+be re-graded rather than re-run.
 
 **Rate limits.** The AI Studio free tier enforces two separate quotas on
 `gemini-3.6-flash`, and one eval case costs 2–3 requests:

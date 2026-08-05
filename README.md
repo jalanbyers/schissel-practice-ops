@@ -90,9 +90,11 @@ because the licence expires before the care date, and Ohio `human_review_require
 `quoted_span` pointing at the defective sentence.
 
 Ohio's record carries two genuine defects — a contradiction about whether a compact privilege
-suffices, and an unbounded "within a reasonable period" deadline. **The agent does not always pick
-the same one.** Sampling five runs gave four vagueness catches and one contradiction. Either is
-correct, and the acceptance test accepts both.
+suffices, and an unbounded "within a reasonable period" deadline. The agent ranks defects by
+consequence and reports the most serious, so expect the contradiction: a physician who cannot tell
+whether they need a licence at all is worse off than one who knows the obligation but not the date.
+Measured 6 of 6 after that rule, against 1 of 5 before it. The acceptance test still accepts either
+span — ranking is a judgment, and one sample is not a guarantee.
 
 Run the tests the same way:
 

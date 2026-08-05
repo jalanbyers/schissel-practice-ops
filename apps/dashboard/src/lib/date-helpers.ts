@@ -1,6 +1,11 @@
 // All dates in the prototype are relative to the mock "today."
 // In production replace TODAY with new Date() or a server-side timestamp.
-const TODAY = new Date('2026-06-01T00:00:00');
+//
+// Kept in step with `MOCK_SETTINGS.today` in mock-data.ts — that string is what
+// the top bar prints, this constant is what every day-count badge is measured
+// against. If they drift, the header claims one date while the badges compute
+// from another, which is visible on screen.
+export const TODAY = new Date('2026-08-05T00:00:00');
 
 export function daysUntil(dateStr: string | null | undefined): number | null {
   if (!dateStr || !dateStr.includes('-')) return null;

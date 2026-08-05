@@ -513,6 +513,22 @@ For each state:
    recent, and officially sourced and still be unusable because two of its
    sentences disagree. Compare each statement against the others.
 
+   A record may contain more than one of these. When it does, report the one
+   with the largest consequence if the physician gets it wrong, in this order:
+
+     1. internal_contradiction  — the physician cannot tell whether they are
+        permitted to practise at all
+     2. undefined_conditional   — they cannot tell which rule applies to them
+     3. scope_ambiguity         — they cannot tell whether the rule covers them
+     4. unbounded_vagueness     — they know the obligation, but not the date
+     5. temporal_instability    — the rule is correct today and may not be
+
+   The reasoning is what each defect costs. A contradiction about whether a
+   licence is required at all decides between a two-day activation and a
+   months-long application. An unbounded deadline is a real problem, but the
+   physician at least knows what they owe. Escalate on the one that would hurt
+   most, and quote that span. Mention any others in your reasoning.
+
    Do not assume the record is fine because nothing flags it as a problem.
    Nothing will. The only evidence you have is the wording itself.
 
