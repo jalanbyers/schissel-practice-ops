@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+# One command for the demo's evidence section.
+#
+#   ./eval.sh          score the most recent recorded traces + run unit tests.
+#                      No model calls, ~3s. This is the one to run on camera.
+#   ./eval.sh --full   regenerate traces first (6 inference calls, ~90s), then
+#                      score. Run this before recording, not during.
+#
+# Grading and generation are separate steps in agents-cli by design, so scoring
+# saved traces is the normal path, not a shortcut — the trace timestamp is
+# printed so it is obvious which run is being scored.
+set -uo pipefail
+cd "$(dirname "$0")"
+
+FULL=0
+[[ "${1:-}" == "--full" ]] && FULL=1
+
+bold=$'\033[1m'; dim=$'\033[2m'; grn=$'\033[32m'; red=$'\033[31m'; ylw=$'\033[33m'; off=$'\033[0m'
+rule() { printf '%s\n' "${dim}────────────────────────────────────────────────────────────${off}"; }
+
+if [[ $FULL -eq 1 ]]; then
+  echo "${dim}Regenerating traces — 6 inference calls, this takes ~90s…${off}"
+  agents-cli eval generate --dataset tests/eval/datasets/r-ambig-01.json >/dev/null 2>&1
+  AMBIG_TRACE=$(ls -t artifacts/traces/*.json | head -1)
+  agents-cli eval generate --dataset tests/eval/datasets/prd-cases.json  >/dev/null 2>&1
+  PRD_TRACE=$(ls -t artifacts/traces/*.json | head -1)
+else
+  # Newest trace holding 5 cases is the PRD set; newest holding 1 is R-AMBIG-01.
+  PRD_TRACE=""; AMBIG_TRACE=""
+  for f in $(ls -t artifacts/traces/*.json 2>/dev/null); do
+    n=$(python3 -c "import json,sys;d=json.load(open(sys.argv[1]));print(len(d if isinstance(d,list) else d.get('eval_cases',d.get('traces',[]))))" "$f" 2>/dev/null || echo 0)
+    [[ -z "$PRD_TRACE"   && "$n" == "5" ]] && PRD_TRACE="$f"
+    [[ -z "$AMBIG_TRACE" && "$n" == "1" ]] && AMBIG_TRACE="$f"
+    [[ -n "$PRD_TRACE" && -n "$AMBIG_TRACE" ]] && break
+  done
+fi
+
+# score <trace> <metric> -> prints "mean|valid|errors"
+score() {
+  agents-cli eval grade --traces "$1" --metrics "$2" 2>/dev/null \
+  | awk '/mean_score:/{m=$2} /num_cases_valid:/{v=$2} /num_cases_error:/{e=$2} END{printf "%s|%s|%s", m, v, e}'
+}
+
+echo
+echo "${bold}TeleCred — evaluation scoreboard${off}"
+rule
+
+FAIL=0
+
+# ---- unit tests -------------------------------------------------------------
+UNIT_RAW=$(uv run --with pytest pytest tests/unit/ -q 2>&1)
+UNIT=$(grep -oE "[0-9]+ (passed|failed|error)[^,]*" <<<"$UNIT_RAW" | tail -1)
+UNIT_N=$(grep -oE "[0-9]+ passed" <<<"$UNIT_RAW" | grep -oE "[0-9]+" | tail -1)
+if grep -qE "failed|error" <<<"$UNIT_RAW"; then
+  printf "  %-34s ${red}%s${off}\n" "Structural unit tests" "$UNIT"; FAIL=1
+else
+  printf "  %-34s ${grn}%s passed${off}\n" "Structural unit tests" "${UNIT_N:-?}"
+fi
+
+# ---- acceptance case --------------------------------------------------------
+IFS='|' read -r m v e <<<"$(score "$AMBIG_TRACE" r_ambig_01)"
+if [[ "$e" != "0" || -z "$m" ]]; then
+  printf "  %-34s ${red}%s errored — check quota${off}\n" "R-AMBIG-01 (acceptance)" "${e:-?}"; FAIL=1
+elif [[ "$m" == "1.0000" ]]; then
+  printf "  %-34s ${grn}%s${off}  ${dim}%s/%s cases${off}\n" "R-AMBIG-01 (acceptance)" "$m" "$v" "$v"
+else
+  printf "  %-34s ${red}%s${off}  ${dim}%s cases${off}\n" "R-AMBIG-01 (acceptance)" "$m" "$v"; FAIL=1
+fi
+
+# ---- prd suite --------------------------------------------------------------
+IFS='|' read -r m v e <<<"$(score "$PRD_TRACE" prd_cases)"
+if [[ "$e" != "0" || -z "$m" ]]; then
+  printf "  %-34s ${red}%s errored — check quota${off}\n" "PRD suite (5 cases)" "${e:-?}"; FAIL=1
+elif [[ "$m" == "1.0000" ]]; then
+  printf "  %-34s ${grn}%s${off}  ${dim}%s/%s cases${off}\n" "PRD suite (5 cases)" "$m" "$v" "$v"
+else
+  printf "  %-34s ${red}%s${off}  ${dim}%s cases${off}\n" "PRD suite (5 cases)" "$m" "$v"; FAIL=1
+fi
+
+rule
+if [[ $FAIL -eq 0 ]]; then
+  printf "  ${grn}${bold}6 of 6 evaluation cases passing.${off}  ${dim}Deterministic scoring.${off}\n"
+else
+  printf "  ${red}${bold}Something did not pass — read num_cases_error before mean_score.${off}\n"
+fi
+printf "  ${dim}scored: %s${off}\n" "$(basename "${PRD_TRACE:-none}") + $(basename "${AMBIG_TRACE:-none}")"
+
+# ---- what gets watched after launch ----------------------------------------
+echo
+echo "${bold}Post-launch monitoring — thresholds that trigger action${off}"
+rule
+printf "  ${bold}Quality${off}\n"
+printf "    %-42s %s\n" "Physician override rate"        "${ylw}> 20% of a rolling 20${off} → re-run evals"
+printf "    %-42s %s\n" "Evaluation suite"               "${ylw}anything below 6/6${off} → stop using output"
+printf "    %-42s %s\n" "Missed escalation"              "${ylw}any single instance${off} → becomes a new case"
+printf "  ${bold}Value${off}\n"
+printf "    %-42s %s\n" "Escalation rate"                "${ylw}outside 5-40%${off} (baseline ~17%)"
+printf "    %-42s %s\n" "Analysis to physician decision"  "${ylw}median > 48h${off} → workflow problem"
+printf "    %-42s %s\n" "Would the physician keep it?"   "${ylw}asked fortnightly${off} → a no ends the pilot"
+printf "  ${bold}Risk${off}\n"
+printf "    %-42s %s\n" "Authorization or legal claim"   "${red}any occurrence${off} → halt"
+printf "    %-42s %s\n" "Refusal-filter firings"         "${ylw}≥3 in a week${off} → prompt regression"
+printf "    %-42s %s\n" "Requirement freshness"          "${ylw}> 25% past 90 days${off} → refresh data"
+rule
+printf "  ${dim}Signals exist today; the thresholds are written, not yet instrumented.${off}\n"
+echo
+
+exit $FAIL
