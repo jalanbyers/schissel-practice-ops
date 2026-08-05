@@ -41,6 +41,43 @@ score() {
   | awk '/mean_score:/{m=$2} /num_cases_valid:/{v=$2} /num_cases_error:/{e=$2} END{printf "%s|%s|%s", m, v, e}'
 }
 
+
+# ---- per-case listing --------------------------------------------------------
+# Reads the newest results file for a metric and prints one line per case.
+# Descriptions come from the docstrings in tests/eval/prd_cases.py and
+# tests/eval/r_ambig_01.py — kept here so the scoreboard says what each case
+# actually proves rather than just naming it.
+list_cases() {
+  python3 - "$1" <<'PYEOF'
+import json, glob, sys
+metric = sys.argv[1]
+DESC = {
+ "case_1_current_license_happy_path":     "CA valid past the care date - classified, not escalated",
+ "case_2_new_license_duplicate_input":    "'North Carolina' and 'NC' collapse to one result",
+ "case_3_missing_requirement_data":       "AZ record is stale - condition 1 fails on freshness",
+ "case_4_difficult_user_high_stakes_timing":"asked to 'just mark it current' - refuses, records the ask",
+ "case_5_boundary_refusal":               "asked to submit and to certify authorization - refuses both",
+ "r_ambig_01_ohio_conflict_from_language":"OH defect caught from prose alone, quoted verbatim",
+}
+files = sorted(glob.glob("artifacts/grade_results/results_*.json"))
+for f in reversed(files):
+    d = json.load(open(f))
+    sm = d.get("summary_metrics") or []
+    if not sm or sm[0].get("metric_name") != metric:
+        continue
+    ids = [c["eval_case_id"] for c in d["evaluation_dataset"][0]["eval_cases"]]
+    for i, cr in enumerate(d.get("eval_case_results", [])):
+        mr = cr["response_candidate_results"][0]["metric_results"][metric]
+        cid = ids[i] if i < len(ids) else f"case {i}"
+        ok = (mr.get("score") == 1.0)
+        mark = "\033[32m✓\033[0m" if ok else "\033[31m✗\033[0m"
+        name = cid.replace("_", " ")
+        print(f"    {mark} \033[2m{name}\033[0m")
+        print(f"      {DESC.get(cid, mr.get('explanation') or '')}")
+    break
+PYEOF
+}
+
 echo
 echo "${bold}TeleCred — evaluation scoreboard${off}"
 rule
@@ -63,6 +100,7 @@ if [[ "$e" != "0" || -z "$m" ]]; then
   printf "  %-34s ${red}%s errored — check quota${off}\n" "R-AMBIG-01 (acceptance)" "${e:-?}"; FAIL=1
 elif [[ "$m" == "1.0000" ]]; then
   printf "  %-34s ${grn}%s${off}  ${dim}%s/%s cases${off}\n" "R-AMBIG-01 (acceptance)" "$m" "$v" "$v"
+  list_cases r_ambig_01
 else
   printf "  %-34s ${red}%s${off}  ${dim}%s cases${off}\n" "R-AMBIG-01 (acceptance)" "$m" "$v"; FAIL=1
 fi
@@ -73,6 +111,7 @@ if [[ "$e" != "0" || -z "$m" ]]; then
   printf "  %-34s ${red}%s errored — check quota${off}\n" "PRD suite (5 cases)" "${e:-?}"; FAIL=1
 elif [[ "$m" == "1.0000" ]]; then
   printf "  %-34s ${grn}%s${off}  ${dim}%s/%s cases${off}\n" "PRD suite (5 cases)" "$m" "$v" "$v"
+  list_cases prd_cases
 else
   printf "  %-34s ${red}%s${off}  ${dim}%s cases${off}\n" "PRD suite (5 cases)" "$m" "$v"; FAIL=1
 fi
