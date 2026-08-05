@@ -26,11 +26,12 @@ the count assumes you don't ad-lib.
 silence on camera. The demo beat below is written to fill it — keep talking. Don't
 stop and watch a spinner.
 
-**Ohio is not deterministic.** The record has two real defects: the
-compact-privilege contradiction and the unbounded "within a reasonable period"
-deadline. Five sample runs gave four vagueness catches, one contradiction. **Don't
-name which one before it appears** — the script reads it off the screen instead,
-so it works either way.
+**Ohio should now show the contradiction.** The record has two real defects, and
+the agent ranks them by consequence — a physician who can't tell whether they need
+a licence at all is worse off than one who knows the obligation but not the date.
+Measured 6 of 6 after that rule went in, against 1 of 5 before. **Still read the
+span off the screen rather than reciting it from memory** — it's a model, and 6 of
+6 is a strong sample, not a guarantee. The line below works either way.
 
 **The refusal is not a UI flow.** There's no free-text box in the panel, and it
 doesn't render `status_source`. So "the agent refuses to be talked into a status"
