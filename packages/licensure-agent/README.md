@@ -48,6 +48,14 @@ about nine seconds — safe to run on camera. Prints the evaluation scoreboard a
 the post-launch monitoring thresholds.
 
 ```bash
+./eval.sh --plan
+```
+
+Prints the pilot plan and rollback. Kept separate because it belongs to a
+different beat of the video than the scoreboard, and together they overflow a
+terminal mid-recording.
+
+```bash
 ./eval.sh --full
 ```
 

@@ -2,7 +2,11 @@
 # One command for the demo's evidence section.
 #
 #   ./eval.sh          score the most recent recorded traces + run unit tests.
-#                      No model calls, ~3s. This is the one to run on camera.
+#                      No model calls, ~9s. This is the one to run on camera.
+#   ./eval.sh --plan   print the pilot plan and rollback. Separate because it
+#                      lands at a different beat of the video (3:40) than the
+#                      scoreboard does (2:40), and together they overflow a
+#                      terminal mid-recording.
 #   ./eval.sh --full   regenerate traces first (6 inference calls, ~90s), then
 #                      score. Run this before recording, not during.
 #
@@ -12,8 +16,9 @@
 set -uo pipefail
 cd "$(dirname "$0")"
 
-FULL=0
+FULL=0; PLAN_ONLY=0
 [[ "${1:-}" == "--full" ]] && FULL=1
+[[ "${1:-}" == "--plan" ]] && PLAN_ONLY=1
 
 bold=$'\033[1m'; dim=$'\033[2m'; grn=$'\033[32m'; red=$'\033[31m'; ylw=$'\033[33m'; off=$'\033[0m'
 rule() { printf '%s\n' "${dim}────────────────────────────────────────────────────────────${off}"; }
@@ -77,6 +82,48 @@ for f in reversed(files):
     break
 PYEOF
 }
+
+# ---- pilot plan --------------------------------------------------------------
+# Mirrors the Rollout row of docs/PRD_DEPLOY_RESPONSES.md so the sheet and the
+# screen cannot drift. The rollback list follows the kit's four-step standard —
+# pause, fall back, diagnose, return — with a tick per step that works today and
+# a ring for the one that does not yet.
+print_plan() {
+  echo
+  echo "${bold}Pilot plan — smallest safe launch${off}"
+  rule
+  printf "  ${bold}Stage one${off} ${dim}· advisory only, frozen data, one physician${off}\n"
+  printf "    %-18s %s\n" "Who"            "one physician - sole user, reviewer, decision owner"
+  printf "    %-18s %s\n" "How many"       "~15 state analyses across 2-3 contracts"
+  printf "    %-18s %s\n" "How long"       "4 weeks, or one contract cycle"
+  printf "    %-18s %s\n" "Cases in"       "the 6 frozen states, against a stated care date"
+  printf "    %-18s %s\n" "Cases out"      "any other state; contract PDFs, licence images,"
+  printf "    %-18s %s\n" ""               "billing; \"may I practise?\"; another physician's data"
+  printf "    %-18s %s\n" "Succeeded when" "every draft reviewed within 48h"
+  printf "    %-18s %s\n" ""               ">= 90% agree with my own read"
+  printf "    %-18s %s\n" ""               "<= 1 in 5 escalations turns out to be a non-issue"
+  printf "    %-18s %s\n" ""               "zero authorization claims"
+  printf "    %-18s %s\n" ""               "I would rather keep it than read board sites by hand"
+  echo
+  printf "  ${bold}Rollback${off} ${dim}· pause -> fall back -> diagnose -> return${off}\n"
+  printf "  ${ylw}o${off} %-18s ${ylw}IN PROGRESS${off} %s\n" "Pause" "- one env var to hide the panel and"
+  printf "    %-18s %s\n" ""  "refuse the endpoint; lands before launch."
+  printf "    %-18s ${dim}%s${off}\n" ""  "Today: stopping the agent leaves the panel"
+  printf "    %-18s ${dim}%s${off}\n" ""  "visible and erroring, which is not a rollback."
+  printf "  ${grn}+${off} %-18s %s\n" "Fall back"         "the manual process never stopped existing"
+  printf "  ${grn}+${off} %-18s %s\n" "Nothing to unwind" "drafts have no write path to a licence record"
+  printf "  ${grn}+${off} %-18s %s\n" "Diagnose"          "audit log and proposals survive the stop"
+  printf "  ${grn}+${off} %-18s %s\n" "Return"            "gated: failing case enters the suite, 6/6 again"
+  rule
+  printf "  ${dim}Then widen the data, then more physicians.${off}\n"
+  printf "  ${dim}More scope - never more autonomy.${off}\n"
+  echo
+}
+
+if [[ $PLAN_ONLY -eq 1 ]]; then
+  print_plan
+  exit 0
+fi
 
 echo
 # ---- what broke ---------------------------------------------------------------
