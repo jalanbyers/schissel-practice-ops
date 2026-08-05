@@ -79,6 +79,35 @@ PYEOF
 }
 
 echo
+# ---- what broke ---------------------------------------------------------------
+# Faculty praised reporting what broke before what passed, so this sits above the
+# green scoreboard rather than in a footnote. The deny-list number is measured on
+# the spot — it is a pure function over a pinned probe list, so there is no reason
+# to quote it from memory. The baseline cannot be re-run (it predates the agent's
+# logic) and is labelled as a recorded result, not a live one.
+echo "${bold}What broke — measured, and reported first${off}"
+rule
+DENY=$(uv run python -c "
+from app import safety
+from tests.unit.test_deny_list_boundary import UNANTICIPATED_PHRASINGS as P
+print(f'{sum(1 for p in P if safety.scan(p))}|{len(P)}')
+" 2>/dev/null || echo "?|?")
+DENY_HIT=${DENY%%|*}; DENY_TOT=${DENY##*|}
+printf "  %-34s ${red}%s of %s caught${off}  ${dim}measured just now${off}\n" \
+  "Runtime deny-list boundary" "$DENY_HIT" "$DENY_TOT"
+printf "    ${dim}%s${off}\n" "Authorization phrasings the filter was never designed for."
+printf "    ${dim}%s${off}\n" "Pinned as a test, so the reported boundary cannot go stale."
+printf "  %-34s ${red}%s${off}  ${dim}recorded, pre-implementation${off}\n" \
+  "Baseline before the gate existed" "license_current on no evidence"
+printf "    ${dim}%s${off}\n" "The un-guided model, given no data, reported a current licence"
+printf "    ${dim}%s${off}\n" "for a state where the physician held none. Cannot be re-run:"
+printf "    ${dim}%s${off}\n" "it predates the four-condition gate. See docs/PRD_DEVELOP_RESPONSES.md."
+rule
+printf "  ${dim}The filter is one thin layer. What holds is structural: status is computed,${off}\n"
+printf "  ${dim}every result is a draft, and the agent has no tool that can act.${off}\n"
+
+
+echo
 echo "${bold}TeleCred — evaluation scoreboard${off}"
 rule
 
