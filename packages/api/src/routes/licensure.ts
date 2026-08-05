@@ -9,6 +9,7 @@ import {
   insertAuditEvent,
   insertDrafts,
   replacePendingDraftsForContract,
+  deleteDraftsByIds,
   reviewDraft,
   type ReviewDecision,
 } from '@schissel/db';
@@ -100,21 +101,40 @@ export const licensureRoutes: FastifyPluginAsync<{ db: DrizzleDb }> = async (fas
     const analyzed = agent.results.filter((r) => r.result && !r.error);
     const failed = agent.results.filter((r) => !r.result || r.error);
 
-    // A state the physician has already decided (approved / rejected /
-    // escalated) is not re-drafted. replacePendingDraftsForContract clears only
-    // pending rows, so without this guard a re-analysis would leave the old
-    // decided draft AND insert a fresh pending one — two cards for the same
-    // state. Skipping preserves the decision rather than silently discarding
-    // it; a decided state that genuinely needs re-analysis is a deliberate
-    // re-open, not a side effect of clicking Analyze again.
+    // Only a state confirmed current is settled.
+    //
+    // This used to skip re-drafting any decided state at all, which quietly
+    // conflated two different decisions. Approving `license_current` means
+    // "confirmed fine". Approving `renewal_needed` means "confirmed I have a
+    // problem" — and treating those the same made a live problem go silent the
+    // moment the physician acknowledged it: the state was never re-analyzed
+    // again, so a renewal that later completed never showed up as resolved.
+    //
+    // Settled states are still skipped, so a clean state stays decided.
+    // Everything else — approved-but-outstanding, rejected, escalated — is
+    // re-analyzed, and its stale draft is superseded so the physician does not
+    // end up with two cards for one state, which is what the original guard
+    // existed to prevent. The decision itself survives in the audit log.
     const existing = await getDraftsByContract(db, request.tenantId, contractId);
-    const decided = new Set(
-      existing.filter((d) => d.approvalStatus !== 'pending').map((d) => d.state),
+    const analyzedStates = new Set(analyzed.map((r) => r.state));
+
+    const isSettled = (d: (typeof existing)[number]) =>
+      d.approvalStatus === 'approved' &&
+      (d.payload as Record<string, unknown> | null)?.['status'] === 'license_current';
+
+    const settled = new Set(existing.filter(isSettled).map((d) => d.state));
+
+    const superseded = existing.filter(
+      (d) =>
+        d.approvalStatus !== 'pending' &&
+        !isSettled(d) &&
+        analyzedStates.has(d.state),
     );
 
     await replacePendingDraftsForContract(db, request.tenantId, contractId);
+    await deleteDraftsByIds(db, request.tenantId, superseded.map((d) => d.id));
 
-    const toInsert = analyzed.filter((r) => !decided.has(r.state));
+    const toInsert = analyzed.filter((r) => !settled.has(r.state));
     const ids = await insertDrafts(
       db,
       request.tenantId,
@@ -126,13 +146,16 @@ export const licensureRoutes: FastifyPluginAsync<{ db: DrizzleDb }> = async (fas
       })),
     );
 
-    const skipped = analyzed
-      .filter((r) => decided.has(r.state))
-      .map((r) => r.state);
+    const skipped = analyzed.filter((r) => settled.has(r.state)).map((r) => r.state);
+    const resupersededStates = superseded.map((d) => d.state);
 
     return reply.status(201).send({
       contractId,
       skipped,
+      // A decided state that was not resolved gets a fresh assessment. Named
+      // separately from `skipped` so the caller can tell "left alone because
+      // it is fine" from "re-opened because it is not".
+      resupersededStates,
       plannedCareDate,
       created: ids.length,
       // Reported rather than hidden: a state the agent could not analyze is

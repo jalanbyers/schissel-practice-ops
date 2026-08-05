@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { licensureDrafts } from '../schema/licensure_drafts.js';
 import { AlreadyReviewedError, NotFoundError } from '../errors.js';
 import type { DrizzleDb } from '../client.js';
@@ -91,6 +91,33 @@ export async function replacePendingDraftsForContract(
         eq(licensureDrafts.approvalStatus, 'pending'),
       ),
     );
+}
+
+/**
+ * Delete specific drafts by id, within a tenant.
+ *
+ * Used when a re-analysis supersedes a decided-but-unresolved draft. The
+ * decision itself is not lost — it was written to the audit log when it was
+ * made, and that is the system of record for who decided what. What goes is
+ * the stale assessment, which would otherwise sit next to a fresh one for the
+ * same state.
+ */
+export async function deleteDraftsByIds(
+  db: DrizzleDb,
+  tenantId: string,
+  ids: string[],
+): Promise<number> {
+  if (ids.length === 0) return 0;
+  const rows = await db
+    .delete(licensureDrafts)
+    .where(
+      and(
+        eq(licensureDrafts.tenantId, tenantId),
+        inArray(licensureDrafts.id, ids),
+      ),
+    )
+    .returning({ id: licensureDrafts.id });
+  return rows.length;
 }
 
 export type ReviewDecision = 'approve' | 'edit' | 'reject' | 'escalate';

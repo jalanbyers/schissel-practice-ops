@@ -104,6 +104,26 @@ I would also read the audit log periodically — not as a metric but as a qualit
 
 Honestly, none of this is instrumented yet. The prototype emits the raw signals — the override record, the audit log, and the eval suite all exist and run — but the thresholds above live in this document rather than in an alert. Wiring them up is launch scaffolding I have not built, and I would not run stage two without it.
 
+**Two build items this row depends on, named rather than assumed.**
+
+*Override capture, before the pilot starts.* Stage one exists to collect real
+override data, and a pilot whose purpose is gathering that data cannot fulfil it
+by hand. Today a physician edit overwrites the agent's assessment in place, and
+the only surviving record of the disagreement is an English sentence in the audit
+label — so override rate would have to be recovered by parsing prose. The fix is
+to preserve the agent's original payload alongside the physician's, and derive
+the override rather than store a flag that can drift from the payloads it
+describes. This is wiring, not research, and it belongs before stage one rather
+than after it.
+
+*An "acknowledged, in progress" decision.* The four review actions cannot express
+the most common real case: the physician agrees a licence needs renewing and has
+already started. They approve, which correctly records agreement — but approval
+and resolution are not the same thing, and the vocabulary has no way to say so.
+Until that exists, "flagged and still outstanding" is not directly measurable;
+it has to be inferred from the status attached to an approval. Worth adding for
+the pilot, when there is real usage to shape it.
+
 ---
 
 ## Feedback · User feedback plan · How you learn after launch

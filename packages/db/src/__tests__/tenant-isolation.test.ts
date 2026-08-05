@@ -35,6 +35,7 @@ import {
   getDraftsByContract,
   getDraftById,
   insertDrafts,
+  deleteDraftsByIds,
   reviewDraft,
 } from '../queries/licensure_drafts.js';
 import {
@@ -289,6 +290,60 @@ describe('licensure drafts — approval gate', () => {
     expect(updated.approvalStatus).toBe('approved');
     expect(updated.reviewedBy).toBe('user-1');
     expect(updated.reviewedAt).not.toBeNull();
+  });
+
+  // The settled-vs-outstanding distinction. Approving `license_current` means
+  // "confirmed fine"; approving `renewal_needed` means "confirmed I have a
+  // problem". Conflating them made a live problem go silent the moment it was
+  // acknowledged, so re-analysis never surfaced it again.
+  describe('superseding a decided draft', () => {
+    async function seedDecided(state: string, status: string, decision: 'approve' | 'reject' | 'escalate') {
+      const [id] = await insertDrafts(db, TENANT_B, [{
+        contractId: 'SYN-CONTRACT-SUP',
+        state,
+        plannedCareDate: '2026-10-01',
+        payload: { state, status },
+      }]);
+      await reviewDraft(db, TENANT_B, id!, { decision, reviewedBy: 'user-1' });
+      return id!;
+    }
+
+    it('deletes only the ids given, and only within the tenant', async () => {
+      const keep = await seedDecided('NV', 'renewal_needed', 'approve');
+      const drop = await seedDecided('UT', 'renewal_needed', 'approve');
+
+      expect(await deleteDraftsByIds(db, TENANT_A, [drop])).toBe(0);
+      await expect(getDraftById(db, TENANT_B, drop)).resolves.toBeTruthy();
+
+      expect(await deleteDraftsByIds(db, TENANT_B, [drop])).toBe(1);
+      await expect(getDraftById(db, TENANT_B, drop)).rejects.toThrow(NotFoundError);
+      await expect(getDraftById(db, TENANT_B, keep)).resolves.toBeTruthy();
+    });
+
+    it('is a no-op on an empty id list', async () => {
+      expect(await deleteDraftsByIds(db, TENANT_B, [])).toBe(0);
+    });
+
+    it('an approved license_current draft is settled; an approved problem is not', async () => {
+      const settled = await seedDecided('WY', 'license_current', 'approve');
+      const outstanding = await seedDecided('ID', 'renewal_needed', 'approve');
+
+      const isSettled = (d: { approvalStatus: string; payload: unknown }) =>
+        d.approvalStatus === 'approved' &&
+        (d.payload as Record<string, unknown>)?.['status'] === 'license_current';
+
+      expect(isSettled(await getDraftById(db, TENANT_B, settled))).toBe(true);
+      expect(isSettled(await getDraftById(db, TENANT_B, outstanding))).toBe(false);
+    });
+
+    it('rejected and escalated drafts are never settled', async () => {
+      const rejected  = await seedDecided('OK', 'license_current', 'reject');
+      const escalated = await seedDecided('KS', 'license_current', 'escalate');
+      for (const id of [rejected, escalated]) {
+        const d = await getDraftById(db, TENANT_B, id);
+        expect(d.approvalStatus).not.toBe('approved');
+      }
+    });
   });
 
   it('a decided draft cannot be decided again', async () => {
