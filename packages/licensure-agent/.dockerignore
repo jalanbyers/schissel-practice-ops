@@ -1,0 +1,10 @@
+# Same exclusions for a local `docker build`, which does not read .gcloudignore.
+.venv/
+artifacts/
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.env
+.git/
+tests/

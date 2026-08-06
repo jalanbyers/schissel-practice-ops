@@ -13,19 +13,10 @@ The commands below are yours to run — they need `gcloud` signed in as you.
 
 ## 1 · The agent on Cloud Run
 
-**Once, if you have not already:**
-
-```bash
-gcloud auth login
-```
-
-```bash
-gcloud config set project YOUR_PROJECT_ID
-```
-
-```bash
-gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
-```
+Already true on this machine, checked rather than assumed: `gcloud` is signed in
+as jalanbyers@gmail.com, the project is `project-37c23864-5e32-45e3-a2b`, billing
+is enabled, and `run`, `cloudbuild` and `artifactregistry` are all enabled. Skip
+to the repository step.
 
 **Create somewhere to keep the image** (once):
 
@@ -36,7 +27,7 @@ gcloud artifacts repositories create telecred --repository-format=docker --locat
 **Build.** From `packages/licensure-agent`:
 
 ```bash
-gcloud builds submit --config cloudbuild.demo.yaml --substitutions _IMAGE=us-east1-docker.pkg.dev/YOUR_PROJECT_ID/telecred/demo:v1
+gcloud builds submit --config cloudbuild.demo.yaml --substitutions _IMAGE=us-east1-docker.pkg.dev/project-37c23864-5e32-45e3-a2b/telecred/demo:v1
 ```
 
 The explicit config exists because `gcloud run deploy --source` and `builds submit --tag`
@@ -48,7 +39,7 @@ load, so it will not serve the demo page.
 **Deploy:**
 
 ```bash
-gcloud run deploy telecred-demo --image us-east1-docker.pkg.dev/YOUR_PROJECT_ID/telecred/demo:v1 --region us-east1 --allow-unauthenticated --min-instances 0 --max-instances 3 --concurrency 4 --timeout 120 --memory 1Gi --set-env-vars DEMO_ALLOWED_ORIGINS=https://jalanbyers.github.io
+gcloud run deploy telecred-demo --image us-east1-docker.pkg.dev/project-37c23864-5e32-45e3-a2b/telecred/demo:v1 --region us-east1 --allow-unauthenticated --min-instances 0 --max-instances 3 --concurrency 4 --timeout 120 --memory 1Gi --set-env-vars DEMO_ALLOWED_ORIGINS=https://jalanbyers.github.io
 ```
 
 What each flag is doing, since several are load-bearing:

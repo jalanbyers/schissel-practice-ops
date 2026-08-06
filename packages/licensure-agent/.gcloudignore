@@ -1,0 +1,15 @@
+# Keeps `gcloud builds submit` from uploading 837MB of local state.
+#
+# Without this the build context is the whole package directory: .venv alone is
+# 798MB and artifacts/ another 38MB, none of which the image needs — the
+# Dockerfile installs dependencies from pyproject.toml and uv.lock inside the
+# container.
+.venv/
+artifacts/
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.env
+.git/
+tests/
