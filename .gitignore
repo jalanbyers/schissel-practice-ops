@@ -56,3 +56,6 @@ __pycache__/
 
 # Faculty course material — the kit itself instructs that this stays out of the repo.
 deploy-companion/
+
+# Captured agent responses used to test the demo page locally; never published.
+demo/_*

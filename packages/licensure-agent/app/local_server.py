@@ -22,10 +22,12 @@ Production would replace this with the Cloud Run deployment of
 import asyncio
 import json
 import logging
+import os
 import re
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from google.adk.runners import InMemoryRunner
 from google.genai import types
 from pydantic import BaseModel, Field
@@ -36,6 +38,34 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="licensure-agent (local)")
+
+# The public demo page is static — GitHub Pages serves HTML and nothing else —
+# so a tester's key travels from their browser straight to this service and
+# touches no host in between. That only works if this service says the page's
+# origin may call it.
+#
+# An explicit allowlist rather than "*": the caller pays for their own model
+# usage, but the compute for every request is ours, so an open endpoint is a
+# standing invitation to spend someone else's money. Set DEMO_ALLOWED_ORIGINS
+# to a comma-separated list to widen it.
+_DEFAULT_ORIGINS = "http://localhost:8899,http://127.0.0.1:8899,http://localhost:3000"
+ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.environ.get("DEMO_ALLOWED_ORIGINS", _DEFAULT_ORIGINS).split(",")
+    if o.strip()
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    # No cookies or auth headers are involved — the key rides in the request
+    # body — so credentials stay off and the browser never attaches ambient
+    # identity to a cross-origin call.
+    allow_credentials=False,
+    allow_methods=["POST", "GET", "OPTIONS"],
+    allow_headers=["content-type"],
+    max_age=3600,
+)
 
 
 class AnalyzeRequest(BaseModel):

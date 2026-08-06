@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TeleCred — run the licensure agent on your own key</title>
+<meta name="description" content="A public demo of the TeleCred licensure analyst. Bring your own Gemini key; nothing is stored.">
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  /* `hidden` is display:none in the UA sheet, which any author `display` rule
+     outranks — .card sets display:flex, so hidden sections rendered anyway. */
+  [hidden] { display: none !important; }
+  h1, h2, h3, p, ul, ol, figure { margin: 0; }
+
+  :root {
+    --bg: #eef2f3;  --surface: #ffffff;  --surface-2: #f7fafa;
+    --line: #dde5e7;  --line-soft: #e8eef0;
+    --ink: #182426;  --ink-2: #46565a;  --ink-3: #6d7f83;
+    --accent: #2563a8;  --accent-700: #1d4f8a;  --accent-bg: #e9eff9;
+    --ok: #15803d;  --ok-bg: #e6f3ec;
+    --warn: #a5510a; --warn-bg: #fbf0df;
+    --bad: #b3261e; --bad-bg: #fbe9e7;
+    --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", "IBM Plex Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1516;  --surface: #151f21;  --surface-2: #111a1b;
+      --line: #26383a;  --line-soft: #1e2d2f;
+      --ink: #e9f1f1;  --ink-2: #a8bcbe;  --ink-3: #7b9195;
+      --accent: #7fb2ec; --accent-700: #a9cdf6; --accent-bg: #14263c;
+      --ok: #58c98a;  --ok-bg: #10281c;
+      --warn: #e0a24a; --warn-bg: #2a2110;
+      --bad: #f08b82; --bad-bg: #2c1414;
+    }
+  }
+
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--sans); line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    padding: 40px 20px 80px;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; display: flex; flex-direction: column; gap: 26px; }
+
+  /* masthead */
+  .brandline { display: flex; align-items: center; gap: 10px; font-size: 15px; }
+  .mark { width: 30px; height: 30px; flex: none; }
+  .brandname { font-weight: 700; letter-spacing: -.01em; }
+  .brandname .ai { color: var(--accent); font-weight: 500; }
+  .sep { color: var(--ink-3); }
+  .product { font-weight: 600; color: var(--ink-2); }
+  h1 { font-size: clamp(27px, 3.6vw, 40px); line-height: 1.1; letter-spacing: -.028em; text-wrap: balance; }
+  .lede { font-size: 16px; color: var(--ink-2); max-width: 68ch; }
+  .lede strong { color: var(--ink); font-weight: 600; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; padding: 20px 22px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .card h2 { font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
+  .hint { font-size: 12.5px; color: var(--ink-3); line-height: 1.5; }
+  .hint a { color: var(--accent-700); }
+
+  label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 5px; }
+  input[type="password"], input[type="date"], input[type="text"] {
+    width: 100%; font: inherit; font-size: 14px;
+    background: var(--surface-2); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px;
+  }
+  input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .row { display: grid; grid-template-columns: 1fr 220px; gap: 14px; align-items: end; }
+  @media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip {
+    font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    background: var(--surface-2); color: var(--ink-2);
+    border: 1px solid var(--line); border-radius: 7px; padding: 6px 11px;
+  }
+  .chip[aria-pressed="true"] { background: var(--accent-bg); color: var(--accent-700); border-color: var(--accent); }
+  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .btn {
+    font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+    background: var(--accent); color: #fff; border: 0;
+    border-radius: 9px; padding: 11px 18px;
+  }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btn.ghost { background: transparent; color: var(--ink-2); border: 1px solid var(--line); }
+  .btn.sm { font-size: 12.5px; padding: 6px 12px; border-radius: 7px; }
+
+  /* pipeline */
+  .steps { display: flex; flex-direction: column; gap: 8px; }
+  .step { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--ink-3); }
+  .step .dot {
+    width: 16px; height: 16px; flex: none; margin-top: 2px;
+    border-radius: 50%; border: 2px solid var(--line);
+  }
+  .step.active { color: var(--ink); font-weight: 600; }
+  .step.active .dot { border-color: var(--accent); border-right-color: transparent; animation: spin .8s linear infinite; }
+  .step.done .dot { border-color: var(--ok); background: var(--ok); }
+  .step .what { font-weight: inherit; }
+  .step .why { display: block; font-weight: 400; color: var(--ink-3); font-size: 12px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .step.active .dot { animation: none; } }
+
+  /* results */
+  .draft { border: 1px solid var(--line); border-left: 3px solid var(--warn); border-radius: 9px; overflow: hidden; }
+  .draft.ok { border-left-color: var(--ok); }
+  .draft.bad { border-left-color: var(--bad); }
+  .draft-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; padding: 11px 14px; background: var(--surface); }
+  .draft-state { font-family: var(--mono); font-weight: 700; font-size: 13px; }
+  .draft-name { font-size: 13px; color: var(--ink-2); flex: 1; }
+  .tag { font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 3px 9px; border-radius: 20px; border: 1px solid currentColor; }
+  .tag.ok { color: var(--ok); background: var(--ok-bg); }
+  .tag.warn { color: var(--warn); background: var(--warn-bg); }
+  .tag.bad { color: var(--bad); background: var(--bad-bg); }
+  .draft-body { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 11px; background: var(--surface); }
+  .checks { display: flex; flex-direction: column; gap: 6px; }
+  .check { font-size: 12.5px; color: var(--ink-3); display: flex; gap: 8px; }
+  .check b { color: var(--ink-2); font-weight: 600; flex: none; }
+  .quote { font-size: 13px; line-height: 1.6; color: var(--ink-2); background: var(--surface-2); border-radius: 7px; padding: 11px 13px; }
+  .quote mark { background: var(--warn-bg); color: var(--ink); padding: 1px 3px; border-radius: 3px; font-weight: 600; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .decided { font-size: 12.5px; font-weight: 600; }
+  .decided.ok { color: var(--ok); }
+  .decided.bad { color: var(--bad); }
+
+  .note {
+    background: var(--accent-bg); border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
+    border-radius: 9px; padding: 12px 14px; font-size: 12.5px; color: var(--ink-2); line-height: 1.55;
+  }
+  .note strong { color: var(--ink); font-weight: 600; }
+  .err { background: var(--bad-bg); border-color: color-mix(in srgb, var(--bad) 34%, transparent); }
+
+  footer { border-top: 1px solid var(--line); padding-top: 16px; font-size: 12px; color: var(--ink-3); line-height: 1.6; }
+  footer a { color: var(--accent-700); }
+  .mono { font-family: var(--mono); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header style="display:flex;flex-direction:column;gap:14px">
+    <div class="brandline">
+      <svg class="mark" viewBox="0 0 32 32" fill="none" aria-label="Telemed.ai" role="img">
+        <defs><linearGradient id="tm" x1="0" y1="0" x2="0" y2="32" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#3d84c9"/><stop offset="1" stop-color="#1d4f8a"/></linearGradient></defs>
+        <rect width="32" height="32" rx="8.5" fill="url(#tm)"/>
+        <g fill="#fff">
+          <rect x="13.9" y="6.2" width="4.2" height="7.2" rx="2.1"/>
+          <rect x="13.9" y="18.6" width="4.2" height="7.2" rx="2.1"/>
+          <rect x="6.2" y="13.9" width="7.2" height="4.2" rx="2.1"/>
+          <rect x="18.6" y="13.9" width="7.2" height="4.2" rx="2.1"/>
+        </g>
+        <circle cx="16" cy="16" r="2.3" fill="#fff"/>
+      </svg>
+      <span class="brandname">Telemed<span class="ai">.ai</span></span>
+      <span class="sep">/</span>
+      <span class="product">TeleCred licensure analyst</span>
+    </div>
+    <h1>Run the agent on your own key.</h1>
+    <p class="lede">
+      TeleCred reads state medical-board requirements and decides which are clear enough to act on —
+      escalating the ones that aren't, and <strong>quoting the exact sentence that made it stop</strong>.
+      This page is the agent on its own, without the portal around it.
+    </p>
+  </header>
+
+  <section class="card">
+    <h2>1 · Your Gemini key</h2>
+    <div>
+      <label for="key">API key</label>
+      <input id="key" type="password" autocomplete="off" spellcheck="false"
+             placeholder="AIza… or AQ.…">
+    </div>
+    <p class="hint">
+      Free from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com/apikey</a>.
+      It is held in a JavaScript variable for as long as this tab is open and
+      <strong>never written to storage, never sent to this page's host</strong> — this page is static, so
+      it has no server to send anything to. Your key goes from your browser to the agent service that
+      makes the model call, and nowhere else. Close the tab and it's gone.
+    </p>
+  </section>
+
+  <section class="card">
+    <h2>2 · What the contract requires</h2>
+    <div class="row">
+      <div>
+        <label for="care">Planned first patient-care date</label>
+        <input id="care" type="date" value="2026-10-01">
+      </div>
+    </div>
+    <div>
+      <label id="stateslabel">Required states</label>
+      <div class="chips" role="group" aria-labelledby="stateslabel" id="chips"></div>
+      <p class="hint" style="margin-top:8px">
+        Six states are in the frozen dataset. <span class="mono">OH</span> is the interesting one —
+        its record contradicts itself, and nothing in the data says so.
+      </p>
+    </div>
+    <div class="actions">
+      <button class="btn" id="run" type="button">Analyze required states</button>
+      <span class="hint" id="missing"></span>
+    </div>
+  </section>
+
+  <section class="card" id="pipeline" hidden>
+    <h2>3 · What's happening</h2>
+    <div class="steps" id="steps"></div>
+  </section>
+
+  <section id="results" hidden style="display:flex;flex-direction:column;gap:12px"></section>
+
+  <div class="note" id="msg" hidden></div>
+
+  <footer>
+    Capstone prototype for Product Faculty's Agentic AI course. Every record is synthetic — six states,
+    frozen. Nothing on this page is stored: results live in the tab and disappear on refresh.
+    Source: <a href="https://github.com/jalanbyers/schissel-practice-ops" target="_blank" rel="noopener noreferrer">github.com/jalanbyers/schissel-practice-ops</a>
+  </footer>
+</div>
+
+<script>
+(function () {
+  // Point at a deployed agent by adding ?agent=https://host to the URL; the
+  // default is the local one so this page works before anything is hosted.
+  var AGENT = new URLSearchParams(location.search).get('agent')
+           || 'http://localhost:8080';
+
+  var STATES = [
+    ['CA', 'California'], ['FL', 'Florida'], ['TX', 'Texas'],
+    ['NC', 'North Carolina'], ['OH', 'Ohio'], ['AZ', 'Arizona']
+  ];
+
+  // Named so the wait explains itself. These mirror what the agent actually
+  // does; there is no way to stream real progress from one HTTP call, so the
+  // timings are indicative and the last step only completes when the response
+  // lands. Labelled honestly rather than pretending to be a live trace.
+  var STEPS = [
+    ['Normalising the state list',   'duplicates collapse — "North Carolina" and "NC" are one state'],
+    ['Looking up each requirement',  'board name, source URL, last-checked date, requirement text'],
+    ['Checking freshness',           'condition 1 — checked within 90 days of the care date?'],
+    ['Checking source and fields',   'conditions 2 and 3 — an authoritative board, nothing missing'],
+    ['Reading the prose',            'condition 4 — the only step that needs judgment'],
+    ['Deriving status from records', 'date arithmetic, not a model opinion — it gets no vote here'],
+    ['Filtering the output',         'authorization and legal-advice language is withheld before it leaves']
+  ];
+
+  var selected = new Set(['CA', 'FL', 'OH']);
+  var timer = null;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var chips = $('chips'), runBtn = $('run'), missing = $('missing');
+  var pipeline = $('pipeline'), stepsEl = $('steps');
+  var results = $('results'), msg = $('msg');
+
+  STATES.forEach(function (s) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'chip'; b.textContent = s[0];
+    b.title = s[1];
+    b.setAttribute('aria-pressed', selected.has(s[0]) ? 'true' : 'false');
+    b.addEventListener('click', function () {
+      if (selected.has(s[0])) selected.delete(s[0]); else selected.add(s[0]);
+      b.setAttribute('aria-pressed', selected.has(s[0]) ? 'true' : 'false');
+      refresh();
+    });
+    chips.appendChild(b);
+  });
+
+  function refresh() {
+    var gaps = [];
+    if (!$('key').value.trim()) gaps.push('an API key');
+    if (!$('care').value) gaps.push('a care date');
+    if (selected.size === 0) gaps.push('at least one state');
+    missing.textContent = gaps.length ? 'Needs ' + gaps.join(', ') + '.' : '';
+    runBtn.disabled = gaps.length > 0;
+  }
+  $('key').addEventListener('input', refresh);
+  $('care').addEventListener('input', refresh);
+  refresh();
+
+  function renderSteps(active) {
+    stepsEl.innerHTML = '';
+    STEPS.forEach(function (s, i) {
+      var d = document.createElement('div');
+      d.className = 'step' + (i < active ? ' done' : i === active ? ' active' : '');
+      d.innerHTML = '<span class="dot"></span><span><span class="what"></span>'
+                  + '<span class="why"></span></span>';
+      d.querySelector('.what').textContent = s[0];
+      d.querySelector('.why').textContent = s[1];
+      stepsEl.appendChild(d);
+    });
+  }
+
+  function say(text, isError) {
+    msg.hidden = false;
+    msg.className = 'note' + (isError ? ' err' : '');
+    msg.textContent = text;
+  }
+
+  function tone(status) {
+    if (status === 'license_current') return 'ok';
+    if (status === 'human_review_required') return 'bad';
+    return 'warn';
+  }
+  function label(status) {
+    return ({
+      license_current: 'License current',
+      renewal_needed: 'Renewal needed',
+      new_application_needed: 'Application needed',
+      human_review_required: 'Human review required'
+    })[status] || status;
+  }
+
+  function draftCard(r) {
+    var t = tone(r.status);
+    var el = document.createElement('article');
+    el.className = 'draft ' + (t === 'ok' ? 'ok' : t === 'bad' ? 'bad' : '');
+
+    var head = document.createElement('div');
+    head.className = 'draft-head';
+    head.innerHTML = '<span class="draft-state"></span><span class="draft-name"></span>'
+                   + '<span class="tag"></span>';
+    head.querySelector('.draft-state').textContent = r.state;
+    var name = (STATES.find(function (s) { return s[0] === r.state; }) || [])[1] || '';
+    head.querySelector('.draft-name').textContent = name;
+    var tag = head.querySelector('.tag');
+    tag.className = 'tag ' + t;
+    tag.textContent = label(r.status);
+    el.appendChild(head);
+
+    var body = document.createElement('div');
+    body.className = 'draft-body';
+
+    if (r.status_rationale) {
+      var why = document.createElement('div');
+      why.className = 'check';
+      why.innerHTML = '<b>Why</b><span></span>';
+      why.querySelector('span').textContent = r.status_rationale;
+      body.appendChild(why);
+    }
+
+    var checks = document.createElement('div');
+    checks.className = 'checks';
+    (r.clarity_checks || []).forEach(function (c) {
+      var row = document.createElement('div');
+      row.className = 'check';
+      row.innerHTML = '<b></b><span></span>';
+      row.querySelector('b').textContent =
+        'Cond ' + c.condition_number + (c.verdict === 'pass' ? ' ✓' : ' ✗');
+      row.querySelector('span').textContent = c.reasoning || '';
+      checks.appendChild(row);
+    });
+    body.appendChild(checks);
+
+    var failed = (r.clarity_checks || []).filter(function (c) {
+      return c.verdict !== 'pass' && c.quoted_span;
+    })[0];
+    if (failed) {
+      var q = document.createElement('p');
+      q.className = 'quote';
+      q.innerHTML = 'The agent may only escalate on language if it quotes the text verbatim:<br><br>'
+                  + '<mark></mark>';
+      q.querySelector('mark').textContent = failed.quoted_span;
+      body.appendChild(q);
+    }
+
+    // The review gate, in memory only. Clicking these teaches what the product
+    // does — every result is a draft until a human decides — without pretending
+    // anything was saved.
+    var actions = document.createElement('div');
+    actions.className = 'actions';
+    ['Approve', 'Reject', 'Escalate'].forEach(function (word) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'btn ghost sm'; b.textContent = word;
+      b.addEventListener('click', function () {
+        actions.innerHTML = '';
+        var d = document.createElement('span');
+        d.className = 'decided ' + (word === 'Approve' ? 'ok' : word === 'Reject' ? 'bad' : '');
+        d.textContent = word === 'Approve' ? 'Approved' : word === 'Reject' ? 'Rejected' : 'Escalated';
+        actions.appendChild(d);
+        var n = document.createElement('span');
+        n.className = 'hint';
+        n.textContent = 'Recorded in this tab only — nothing is stored.';
+        actions.appendChild(n);
+      });
+      actions.appendChild(b);
+    });
+    var gate = document.createElement('span');
+    gate.className = 'hint';
+    gate.textContent = 'Pending your review';
+    actions.appendChild(gate);
+    body.appendChild(actions);
+
+    el.appendChild(body);
+    return el;
+  }
+
+  runBtn.addEventListener('click', function () {
+    var key = $('key').value.trim();
+    var care = $('care').value;
+    var states = STATES.map(function (s) { return s[0]; }).filter(function (c) { return selected.has(c); });
+
+    runBtn.disabled = true;
+    msg.hidden = true;
+    results.hidden = true;
+    results.innerHTML = '';
+    pipeline.hidden = false;
+
+    var step = 0;
+    renderSteps(step);
+    timer = setInterval(function () {
+      if (step < STEPS.length - 1) { step++; renderSteps(step); }
+    }, 2200);
+
+    fetch(AGENT.replace(/\/$/, '') + '/analyze', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        contract_id: 'public-demo',
+        states: states,
+        planned_care_date: care,
+        api_key: key
+      })
+    })
+    .then(function (res) {
+      if (!res.ok) throw new Error('The agent returned ' + res.status + '.');
+      return res.json();
+    })
+    .then(function (data) {
+      clearInterval(timer);
+      renderSteps(STEPS.length);
+      results.hidden = false;
+
+      var rows = data.results || [];
+      var failures = rows.filter(function (r) { return r.error || !r.result; });
+
+      // A rejected key fails every state independently, so the raw path shows
+      // the same Google exception once per state. That is the single most
+      // likely thing to go wrong here — a typo — and three stack traces is a
+      // bad way to say "check your key".
+      var keyProblem = failures.length === rows.length && rows.length > 0 &&
+        failures.every(function (r) { return /API[ _]key not valid|API_KEY_INVALID|INVALID_ARGUMENT/i.test(r.error || ''); });
+
+      if (keyProblem) {
+        pipeline.hidden = true;
+        say('Google did not accept that API key. Check it at aistudio.google.com/apikey — '
+          + 'keys start with "AIza" or "AQ.". Nothing was charged and nothing was stored.', true);
+        return;
+      }
+
+      var ok = 0;
+      rows.forEach(function (r) {
+        if (r.error || !r.result) {
+          var e = document.createElement('div');
+          e.className = 'note err';
+          // Trim the provider's wrapper; the useful part is the first sentence.
+          var detail = String(r.error || 'no result returned').replace(/^\w+Error:\s*/, '').slice(0, 180);
+          e.textContent = r.state + ' could not be analyzed — ' + detail;
+          results.appendChild(e);
+        } else {
+          ok++;
+          results.appendChild(draftCard(r.result));
+        }
+      });
+      if (ok) {
+        say('Every result above is a draft. In the portal it stays that way until a physician '
+          + 'approves, edits, rejects or escalates it — the agent has no tool that can file, '
+          + 'submit, publish, or tell you that you may practise.');
+      }
+    })
+    .catch(function (err) {
+      clearInterval(timer);
+      pipeline.hidden = true;
+      var m = String(err && err.message || err);
+      if (/Failed to fetch|NetworkError/i.test(m)) {
+        m = 'Could not reach the agent at ' + AGENT + '. If you are running it locally, start it first; '
+          + 'otherwise add ?agent=https://your-host to this URL.';
+      } else if (/\b400\b/.test(m)) {
+        m += ' A 400 usually means the API key was not accepted.';
+      }
+      say(m, true);
+    })
+    .then(function () { refresh(); });
+  });
+})();
+</script>
+</body>
+</html>
