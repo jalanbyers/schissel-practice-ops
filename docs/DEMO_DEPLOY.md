@@ -76,6 +76,12 @@ What each flag is doing, since several are load-bearing:
 gcloud run services describe telecred-demo --region us-east1 --format 'value(status.url)'
 ```
 
+**Note: `/healthz` is unreachable on Cloud Run.** Google's frontend reserves that
+path and answers it itself with a 404 in ~80ms, never touching the container. The
+route is deployed and every other path — including `/docs`, `/openapi.json` and
+made-up ones — reaches the app normally. Harmless for the demo, which only calls
+`/analyze`, but do not point an uptime check at it.
+
 **Check it refuses to work without a caller key** — this should return 400, not 200:
 
 ```bash
@@ -104,9 +110,10 @@ The page defaults to `http://localhost:8080` so it works for anyone who clones t
 repo. To make the hosted page use the hosted agent, put the Cloud Run URL in
 `demo/index.html`:
 
-```js
-var AGENT = new URLSearchParams(location.search).get('agent')
-         || 'https://telecred-demo-XXXX.us-east1.run.app';
+Done — it points at:
+
+```text
+https://telecred-demo-86074928442.us-east1.run.app
 ```
 
 Keeping the query-string override means you can point a tester at a different
@@ -128,6 +135,15 @@ middleware reads it and skips the Auth0 gate. Removing links to a URL is not acc
 control; unset that variable and redeploy if the portal should require a login.
 
 ---
+
+## Verified against the live deployment
+
+| Check | Result |
+|---|---|
+| Keyless request | `400` — "This deployment has no model key of its own" |
+| CORS from `https://jalanbyers.github.io` | `200`, correct allow-origin |
+| CORS from an unknown origin | `400`, blocked |
+| Full analysis (CA + OH) with a caller key | `200` — CA `license_current`, OH `human_review_required` / `internal_contradiction`, 23s including cold start |
 
 ## Cost
 

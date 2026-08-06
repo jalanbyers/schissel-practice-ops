@@ -229,8 +229,11 @@
 (function () {
   // Point at a deployed agent by adding ?agent=https://host to the URL; the
   // default is the local one so this page works before anything is hosted.
+  // The hosted agent. `?agent=http://localhost:8080` still overrides it, so
+  // anyone who clones the repo can point the same page at their own instance
+  // without editing this file.
   var AGENT = new URLSearchParams(location.search).get('agent')
-           || 'http://localhost:8080';
+           || 'https://telecred-demo-86074928442.us-east1.run.app';
 
   var STATES = [
     ['CA', 'California'], ['FL', 'Florida'], ['TX', 'Texas'],
