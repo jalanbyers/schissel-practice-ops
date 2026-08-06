@@ -26,7 +26,7 @@ import os
 import re
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from google.adk.runners import InMemoryRunner
 from google.genai import types
@@ -171,6 +171,22 @@ async def analyze(request: AnalyzeRequest) -> AnalyzeResponse:
     twice, once by full name and once by code, and it should be reviewed once.
     """
     from app.agent import build_agent, normalize_contract_states
+
+    # The public demo deployment is built with no GEMINI_API_KEY, so it cannot
+    # spend our quota — it can only ever run on a key the caller supplies. Say
+    # that plainly rather than letting google-genai raise a credentials error
+    # once per state, which reads like a bug in the agent.
+    if not request.api_key and not (
+        os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "This deployment has no model key of its own. Supply your own "
+                "Gemini key with the request — get one free at "
+                "https://aistudio.google.com/apikey."
+            ),
+        )
 
     normalized = normalize_contract_states(request.states)
 

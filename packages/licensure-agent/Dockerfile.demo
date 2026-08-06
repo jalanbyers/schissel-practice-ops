@@ -1,0 +1,27 @@
+# Public bring-your-own-key demo service.
+#
+# Separate from `Dockerfile` on purpose. That one runs `app.fast_api_app:app`,
+# the scaffolded production entrypoint, which imports google.auth and Cloud
+# Logging at module load and exposes the ADK's own surface — it has no
+# /analyze, no caller-supplied key, and no CORS. The demo page needs all three.
+#
+# This image runs `app.local_server:app`, and is built with NO model key. That
+# is the point rather than an omission: the service cannot call Gemini on its
+# own credentials because it has none, so a public endpoint cannot be turned
+# into a way of spending ours. Every request must carry the caller's key.
+FROM python:3.12-slim
+
+RUN pip install --no-cache-dir uv==0.8.13
+
+WORKDIR /code
+
+COPY ./pyproject.toml ./README.md ./uv.lock* ./
+COPY ./app ./app
+
+RUN uv sync --frozen
+
+# Cloud Run injects PORT; default to 8080 for local parity.
+ENV PORT=8080
+EXPOSE 8080
+
+CMD ["sh", "-c", "uv run uvicorn app.local_server:app --host 0.0.0.0 --port ${PORT}"]

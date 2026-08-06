@@ -163,7 +163,7 @@ is scripted as a terminal beat in the evidence section, not in the demo minute.
 > It advises. A human decides. That's not a limitation I plan to remove later.
 > That's the product.
 
-**Final frame:** the live link — `schissel-health-ops.vercel.app`
+**Final frame:** the live link — `jalanbyers.github.io/schissel-practice-ops`
 
 ---
 

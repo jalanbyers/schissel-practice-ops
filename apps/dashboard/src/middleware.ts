@@ -26,10 +26,10 @@ const ALLOW_ANONYMOUS = process.env['DEMO_ALLOW_ANONYMOUS'] === 'true';
  * callback — where the state cookie set on this origin is never sent, so state
  * validation fails and /api/auth/callback returns an opaque 500.
  *
- * This is a real failure this repo hit: three Vercel projects deploy this same
- * app, and one had APP_BASE_URL set to another's origin. Starting a login on
- * schissel-dashboard.vercel.app landed on schissel-health-ops.vercel.app and
- * 500'd, with nothing in the error naming the cause.
+ * This is a real failure this repo hit: three deployments serve this same app,
+ * and one had APP_BASE_URL set to another's origin. A login started on one
+ * deployment landed on another for the callback and 500'd, with nothing in the
+ * error naming the cause.
  *
  * Note this is a *different* check from the one in lib/auth.ts, which catches
  * a MISSING variable. A wrong-but-present value passes that check cleanly —

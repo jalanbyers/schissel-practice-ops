@@ -4,7 +4,8 @@ A telemedicine practice-operations portal with **TeleCred**, an embedded licensu
 that reads state medical-board requirements, decides which are clear enough to act on, and
 escalates the ones that are not.
 
-**Live demo:** https://schissel-health-ops.vercel.app
+**Live demo:** https://jalanbyers.github.io/schissel-practice-ops/ — the licensure agent,
+run on your own Gemini key. Nothing is stored.
 
 Built as the capstone for Product Faculty's Agentic AI course.
 
@@ -47,10 +48,9 @@ Contract PDFs, scanned licence images, and billing records are out of scope for 
 
 ## Run the agent yourself
 
-The public link runs in **demo mode**: the drafts you see are real agent output that was recorded,
-not generated on the spot. The agent is a separate Python service with its own model key and a
-database behind it, and the static deployment hosts neither — so nobody else's API key is ever
-routed through this infrastructure.
+The public demo page is static, which is what makes it safe: it has no server, so your key goes
+from your browser straight to the agent service that makes the model call and touches nothing in
+between. It is never stored.
 
 To watch it actually run, bring your own key. Three tiers, cheapest first.
 
