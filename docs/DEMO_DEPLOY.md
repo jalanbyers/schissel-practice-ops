@@ -24,6 +24,17 @@ to the repository step.
 gcloud artifacts repositories create telecred --repository-format=docker --location=us-east1
 ```
 
+**Let Cloud Build push to it.** Cloud Build now runs as the *Compute Engine
+default* service account, not the legacy `@cloudbuild` one, and that account has
+no Artifact Registry access by default — the image builds and then fails at the
+push with `Permission 'artifactregistry.repositories.uploadArtifacts' denied`.
+Granted on the repository rather than the project, so it is write access to this
+one repo and nothing else:
+
+```bash
+gcloud artifacts repositories add-iam-policy-binding telecred --location=us-east1 --project=project-37c23864-5e32-45e3-a2b --member=serviceAccount:86074928442-compute@developer.gserviceaccount.com --role=roles/artifactregistry.writer
+```
+
 **Build.** From `packages/licensure-agent`:
 
 ```bash
