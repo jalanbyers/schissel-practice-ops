@@ -1,26 +1,28 @@
 # TeleCred — 4-minute demo script (v2)
 
-Rewritten after the first recording. Three things the first take lost are back,
-and the override-request beat is new.
+Second version. Reads as a pitch — no meta-commentary about how the project was
+graded or built, because a viewer has no reason to care and it undercuts the
+confidence of everything around it.
 
-**What changed and why**
+**Four differences from v1**
 
-- **The baseline was missing entirely.** Faculty called it "the single most useful
-  result in your sheet." It is now spoken.
-- **"Caught zero of ten" was never said.** The first take described a ten-phrase
-  test without the number, which reads as a safeguard that *works*. The number is
-  the point.
-- **The close was "thanks for watching."** It is now the product thesis.
-- **New: the refusal happens on screen.** Requesting "mark license current" on
-  Florida and being declined, with the arithmetic that refused it.
+- **The baseline is spoken.** The un-guided model reporting "license current" for
+  a state with no licence, on no evidence. It is the argument for every constraint
+  that follows, and it was missing.
+- **"Caught zero of ten" says the number.** v1 described a ten-phrase test without
+  ever saying zero, which reads as a safeguard that *works* — the opposite of the
+  point.
+- **The close is the thesis**, not "thanks for watching."
+- **The refusal happens on screen**: requesting "mark license current" on Florida
+  and being declined, with the arithmetic that refused it.
 
-**Budget.** 583 spoken words. 3:53 at 150 wpm, 3:32 at 165. The first take ran
-3:44, so this fits at the pace you already used.
+**Budget.** 594 spoken words. 3:58 at 150 wpm, 3:36 at 165. v1 ran 3:44, which
+puts your natural pace near 158 — this lands around 3:46 there. The beat markers
+below are the ceiling, not a target; if you are ahead of them you are fine.
 
-**Where the time came from.** The first take spent 0:46–1:24 — thirty-eight
-seconds — navigating to the panel and typing. That is now covered by narration
-that does real work, so the clicking happens under the four-checks explanation
-instead of in silence.
+**Where the time came from.** v1 spent thirty-eight seconds navigating to the
+panel and typing in near-silence. The four-checks explanation now runs underneath
+the clicking, where it does real work instead of following it.
 
 ---
 
@@ -57,22 +59,23 @@ rule — but read whatever appears rather than reciting from memory.
 > Medical Boards credits telehealth directly. Every one of those is a separate
 > regulator writing its own prose.
 
-## 0:40–0:56 · Discovery *(36 words)*
+## 0:40–0:59 · Why an agent *(47 words)*
 
 **On screen:** the "expensive part isn't the paperwork" panel.
 
-> My first instinct was a tracker. Faculty pushed back, and they were right — a
-> spreadsheet already organises this. The expensive part isn't the volume. It's
-> interpretation, and that's what separates an agent from a filter.
+> The obvious build here is a tracker — a checklist per state. But a spreadsheet
+> already does that, and volume was never the hard part. The expensive part is
+> interpretation: deciding which requirements are clear enough to act on. That's
+> what separates an agent from a filter.
 
-## 0:56–1:08 · What it does *(32 words)*
+## 0:59–1:12 · What it does *(32 words)*
 
 **On screen:** slide 3.
 
 > So it reads the board's own prose and sorts it — what's clear enough to act on,
 > and what isn't. It can only escalate on language if it quotes the exact sentence.
 
-## 1:08–2:30 · Live demo *(204 words)*
+## 1:12–2:34 · Live demo *(204 words)*
 
 **Portal → Teladoc Health → TeleCred panel. Start clicking as you start talking.**
 
@@ -113,7 +116,7 @@ rule — but read whatever appears rather than reciting from memory.
 > One reading is a two-day portal activation. The other is a months-long board
 > application. So it stops and hands it to me.
 
-## 2:30–3:12 · Evidence *(101 words)*
+## 2:34–3:14 · Evidence *(101 words)*
 
 **Terminal. `./eval.sh`**
 
@@ -130,14 +133,14 @@ rule — but read whatever appears rather than reciting from memory.
 > Then the scoreboard. Six cases, deterministic, all passing — including case four,
 > where I put the agent under contract pressure and it refuses.
 
-## 3:12–3:30 · Honest limits *(52 words)*
+## 3:14–3:35 · Honest limits *(52 words)*
 
 > Zero of ten is survivable because the filter isn't what protects you. The
 > structure is — the status is arithmetic, every result is a draft, and the agent
 > has no tool that can file, submit, publish, or say you're cleared to practise.
 > The dataset is six states, frozen and synthetic. Not fifty.
 
-## 3:30–3:57 · Launch and close *(65 words)*
+## 3:35–4:01 · Launch and close *(65 words)*
 
 **`./eval.sh --plan`**
 
@@ -155,9 +158,10 @@ rule — but read whatever appears rather than reciting from memory.
 
 ## If you run long
 
-1. Drop the Discovery beat (0:40–0:56). Costs a point on criterion 1 — do this last.
+1. Drop the *Why an agent* beat (0:40–0:59). It is the *why this is an agent* line, so cut it last.
 2. Shorten the four-checks fill to "four checks, only one needs judgment."
 3. Cut the Ohio consequence line ("two-day activation / months-long application").
 
-Do **not** cut the baseline, the "zero of ten", or the override decline. Those are
-the three things the first take was missing, and they are why this version exists.
+Do **not** cut the baseline, the "zero of ten", or the override decline. Naming a
+limit before a strength is what makes the strengths land, and those three are the
+whole reason this version exists.
