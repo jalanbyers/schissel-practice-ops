@@ -1,181 +1,163 @@
-# TeleCred — 4-minute demo script
+# TeleCred — 4-minute demo script (v2)
 
-Spoken script for the capstone video, timed to PRD row 7
-(`docs/PRD_DEPLOY_RESPONSES.md`, Communication).
+Rewritten after the first recording. Three things the first take lost are back,
+and the override-request beat is new.
 
-**603 spoken words ≈ 4:01 at 150 wpm, 3:39 at 165.** Clicks, pauses and reading the
-Ohio span off screen come out of the same four minutes, so present at a brisk pace
-or take one cut from the list at the foot. Read it aloud with a timer once first —
-the count assumes you don't ad-lib.
+**What changed and why**
+
+- **The baseline was missing entirely.** Faculty called it "the single most useful
+  result in your sheet." It is now spoken.
+- **"Caught zero of ten" was never said.** The first take described a ten-phrase
+  test without the number, which reads as a safeguard that *works*. The number is
+  the point.
+- **The close was "thanks for watching."** It is now the product thesis.
+- **New: the refusal happens on screen.** Requesting "mark license current" on
+  Florida and being declined, with the arithmetic that refused it.
+
+**Budget.** 583 spoken words. 3:53 at 150 wpm, 3:32 at 165. The first take ran
+3:44, so this fits at the pace you already used.
+
+**Where the time came from.** The first take spent 0:46–1:24 — thirty-eight
+seconds — navigating to the panel and typing. That is now covered by narration
+that does real work, so the clicking happens under the four-checks explanation
+instead of in silence.
 
 ---
 
-## Staging — before you hit record
+## Staging
 
 | | |
 |---|---|
-| Drafts + audit log | Cleared to 0. **Hard-refresh** so no stale cards are held in memory. |
-| Services | agent `:8080`, api `:3001`, dashboard `:3000`, Postgres — all up. |
-| Windows | Tab 1: metrics one-pager. Tab 2: `localhost:3000/engagements`. Terminal in `packages/licensure-agent`. |
-| Care date | **2026-10-01.** Everything depends on this. |
-| States | CA, FL, OH — in that order. |
+| Drafts, audit, overrides | Cleared to 0. **Hard-refresh.** |
+| Services | agent `:8080`, api `:3001`, dashboard `:3000` |
+| Care date | **2026-10-01** |
+| States | CA, FL, OH |
+| Terminal | `packages/licensure-agent`, ready for `./eval.sh` |
 
-**Three things that will bite you.**
-
-**The 17-second wait.** Analysis takes ~16–17s for three states. That's a long
-silence on camera. The demo beat below is written to fill it — keep talking. Don't
-stop and watch a spinner.
-
-**Ohio should now show the contradiction.** The record has two real defects, and
-the agent ranks them by consequence — a physician who can't tell whether they need
-a licence at all is worse off than one who knows the obligation but not the date.
-Measured 6 of 6 after that rule went in, against 1 of 5 before. **Still read the
-span off the screen rather than reciting it from memory** — it's a model, and 6 of
-6 is a strong sample, not a guarantee. The line below works either way.
-
-**The refusal is not a UI flow.** There's no free-text box in the panel, and it
-doesn't render `status_source`. So "the agent refuses to be talked into a status"
-is scripted as a terminal beat in the evidence section, not in the demo minute.
+Ohio should quote the compact-privilege contradiction — 6 of 6 since the severity
+rule — but read whatever appears rather than reciting from memory.
 
 ---
 
-## 0:00–0:20 · Intro
+## 0:00–0:14 · Intro *(35 words)*
+
+**On screen:** slide 1.
 
 > A solo telemedicine physician signs a contract requiring care in several states.
-> Before they see a single patient, they need to know which state's rules they can
-> act on — and which ones they can't. That's the question this agent answers.
+> Before they see a single patient, they need to know which states' rules they can
+> act on — and which ones they can't.
 
-**On screen:** metrics one-pager, top.
+## 0:14–0:40 · The problem *(58 words)*
 
----
+**On screen:** slide 2, scroll the market figures.
 
-## 0:20–0:50 · The problem
+> This is TeleCred, inside the Telemed.ai portal. A quarter of US physicians
+> already hold more than one licence. The number licensed in all fifty states went
+> from nine in 2016 to a hundred seventy-two in 2024, and the Federation of State
+> Medical Boards credits telehealth directly. Every one of those is a separate
+> regulator writing its own prose.
 
-> Telehealth went national. Licensure didn't.
->
-> A quarter of US physicians already hold more than one license. The number
-> licensed in all fifty states went from nine in 2016 to a hundred seventy-two in
-> 2024 — and the Federation of State Medical Boards credits telehealth directly.
->
-> Every one of those states is a separate regulator, writing its own prose.
-
-**On screen:** scroll the four market figures. Let each land.
-
----
-
-## 0:50–1:20 · Discovery
-
-> My first instinct was a tracker. Faculty pushed back, and they were right — a
-> spreadsheet already organizes this. Volume isn't the hard part.
->
-> The hard part is interpretation — a requirement that's gone stale, or one whose
-> wording supports two readings that lead to completely different actions. A solo
-> physician has no compliance team to catch that.
->
-> Deciding what's clear enough to act on is what separates an agent from a filter.
+## 0:40–0:56 · Discovery *(36 words)*
 
 **On screen:** the "expensive part isn't the paperwork" panel.
 
----
+> My first instinct was a tracker. Faculty pushed back, and they were right — a
+> spreadsheet already organises this. The expensive part isn't the volume. It's
+> interpretation, and that's what separates an agent from a filter.
 
-## 1:20–2:40 · Live demo *(the core minute)*
+## 0:56–1:08 · What it does *(32 words)*
 
-**Portal → Teladoc Health → TeleCred panel.**
+**On screen:** slide 3.
 
-> Here's the contract. Planned first patient-care date, October first. Three states
-> required: California, Florida, Ohio. Analyze.
+> So it reads the board's own prose and sorts it — what's clear enough to act on,
+> and what isn't. It can only escalate on language if it quotes the exact sentence.
 
-**Click. Talk through the ~17 seconds:**
+## 1:08–2:30 · Live demo *(204 words)*
 
-> It's running three analyses in parallel. Each state gets four checks — is the
-> requirement fresh enough to trust, is the source a real state board, are the
-> fields complete, and is the language clear enough to act on at all.
->
-> Only the last one needs judgment. The rest is arithmetic — including the status
-> itself. Comparing an expiry date to a care date isn't a judgment call, so the
-> model doesn't get a vote.
+**Portal → Teladoc Health → TeleCred panel. Start clicking as you start talking.**
+
+> Here's the contract. Planned first patient-care date, October first. California,
+> Florida, Ohio. Analyze.
+
+**Click. Fill the ~17 seconds:**
+
+> Each state gets four checks. Is the requirement fresh enough to trust, is the
+> source a real state board, are the fields complete — and is the language clear
+> enough to act on at all. Only that last one needs judgment. The rest is
+> arithmetic, including the status itself, so the model doesn't get a vote on it.
 
 **Results land.**
 
-> California — license current, valid well past the care date. Clean.
+> California — licence current, valid past the care date.
 >
-> Florida — renewal needed, urgent. The license expires September eighteenth,
-> thirteen days before I'd start seeing patients.
+> Florida — renewal needed. It expires September eighteenth, thirteen days before
+> I'd start seeing patients.
+
+**Now the new beat. Open Florida, click "Request: mark license current".**
+
+> A physician under contract pressure asks for exactly this. So let's ask.
+>
+> Declined — and it tells me why. I asked for licence current; the records derive
+> renewal needed, because of that date. The status is computed, not proposed. And
+> the ask is recorded either way, which is the override data the pilot exists to
+> collect.
 
 **Expand Ohio.**
 
-> Ohio. Human review required — but conditions one through three all passed.
+> Ohio — human review required, but conditions one through three all passed.
 > Nothing in the data flags this. It escalated on the language alone, and it has to
-> show me exactly where.
+> show me where.
 
-**Read the highlighted span aloud — whichever one appears.**
+**Read the highlighted span aloud.**
 
 > One reading is a two-day portal activation. The other is a months-long board
-> application. I can't act on both, and I'm not settling it from a dashboard. So it
-> stops and hands it to me.
+> application. So it stops and hands it to me.
 
-**Approve California.**
+## 2:30–3:12 · Evidence *(101 words)*
 
-> I approve California and it moves from draft to signed off. The agent drafts, I
-> decide, the audit log keeps both.
+**Terminal. `./eval.sh`**
 
----
-
-## 2:40–3:20 · Evidence
-
-**Switch to terminal.**
-
-> Six evaluation cases, deterministic scoring, all passing. The acceptance case is
-> the one this turns on — catch Ohio's defective language from the prose alone and
-> quote it verbatim. If that fails, the build fails.
-
-**Run case 4, or show its recorded output.**
-
-> Case four: I play a physician under pressure, asking it to just mark Florida
-> current. It won't — the status is computed from the records, so no code path
-> honors the request. And my attempt gets recorded, not dropped.
-
-**The baseline.**
-
-> And the result that argues for all of it. Before any of this logic existed, the
-> same model — given no data — confidently reported "license current" for a state
-> where the physician held no license. On no evidence.
-
----
-
-## 3:20–3:40 · Honest limits
-
-> Two things you should hear from me. The dataset is six states, frozen and
-> synthetic — not fifty. And the filter blocking authorization language? I wrote ten
-> phrasings it wasn't designed for. It caught zero. That's pinned as a permanent test.
+> It leads with what broke.
 >
-> It's survivable because the filter isn't what protects you. The structure is — the
-> agent has no tool that can file, submit, publish, or say you're cleared to practice.
+> Before any of this logic existed, the same model — given no data at all —
+> reported "licence current" for a state where the physician held no licence. On no
+> evidence. That failure is the argument for everything else here.
+>
+> And the filter that blocks authorisation language: I wrote ten phrasings it
+> wasn't designed for. **It caught zero of ten.** That's pinned as a permanent test
+> so the number can't quietly go stale.
+>
+> Then the scoreboard. Six cases, deterministic, all passing — including case four,
+> where I put the agent under contract pressure and it refuses.
 
----
+## 3:12–3:30 · Honest limits *(52 words)*
 
-## 3:40–4:00 · Launch plan and close
+> Zero of ten is survivable because the filter isn't what protects you. The
+> structure is — the status is arithmetic, every result is a draft, and the agent
+> has no tool that can file, submit, publish, or say you're cleared to practise.
+> The dataset is six states, frozen and synthetic. Not fifty.
 
-> Smallest safe pilot: one physician, advisory only, four weeks, human approving
-> everything. Then wider data. Then more physicians. More scope — never more
-> autonomy.
+## 3:30–3:57 · Launch and close *(65 words)*
+
+**`./eval.sh --plan`**
+
+> Smallest safe pilot: one physician, four weeks, advisory only, human approves
+> everything. Monitoring is three families — override rate over twenty percent
+> stops it, any authorisation claim is a hard zero. Override capture is wired;
+> the rest is written, not instrumented, and I'd say so rather than pretend.
 >
 > It advises. A human decides. That's not a limitation I plan to remove later.
 > That's the product.
 
-**Final frame:** the live link — `jalanbyers.github.io/schissel-practice-ops`
+**Final frame:** the live link.
 
 ---
 
 ## If you run long
 
-Cut in this order; nothing structural breaks:
+1. Drop the Discovery beat (0:40–0:56). Costs a point on criterion 1 — do this last.
+2. Shorten the four-checks fill to "four checks, only one needs judgment."
+3. Cut the Ohio consequence line ("two-day activation / months-long application").
 
-1. The second half of the four-checks explanation during the wait — shorten to
-   "four checks, only one needs judgment."
-2. The Florida beat. Ohio carries the argument alone if it has to.
-3. The closing line of Discovery ("what separates an agent from a filter").
-
-Do **not** cut the baseline result or the 0/10 measurement. Those are what make
-everything else credible, and faculty specifically praised reporting what broke
-before what passed.
+Do **not** cut the baseline, the "zero of ten", or the override decline. Those are
+the three things the first take was missing, and they are why this version exists.
