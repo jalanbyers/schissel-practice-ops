@@ -9,3 +9,4 @@ export * from './queries/finances.js';
 export * from './queries/settings.js';
 export * from './queries/audit.js';
 export * from './queries/licensure_drafts.js';
+export * from './queries/licensure_override_requests.js';

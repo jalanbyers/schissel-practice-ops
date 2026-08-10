@@ -7,6 +7,7 @@ import { US_GRID, US_NAMES } from '@/lib/us-grid';
 import {
   useLicensureDrafts,
   useReviewDraft,
+  useRequestOverride,
   useRunLicensureAnalysis,
   type ClarityCheck,
   type LicensureDraft,
@@ -93,6 +94,7 @@ function DraftCard({ draft, contractId }: { draft: LicensureDraft; contractId: s
   const [note, setNote] = useState('');
   const [noteFor, setNoteFor] = useState<ReviewDecision | null>(null);
   const review = useReviewDraft(contractId);
+  const override = useRequestOverride();
   const decided = draft.approvalStatus !== 'pending';
 
   /**
@@ -265,6 +267,52 @@ function DraftCard({ draft, contractId }: { draft: LicensureDraft; contractId: s
                 )}
               </div>
               {review.isError && <div className="empty-mini error">{review.error.message}</div>}
+
+              {/*
+                The out-of-policy request, as a fixed control rather than a prompt
+                box. The refusal is the moment a reviewer most needs to see the
+                gate hold, and until now it held everywhere except on screen. One
+                button asking for one known status needs no free text — and free
+                text would add an injection surface for nothing.
+
+                Offered only where there is something to want overridden; on a
+                state already current the request has no meaning.
+              */}
+              {p.status !== 'license_current' && (
+                <div className="draft-override">
+                  <button
+                    type="button"
+                    className="btn ghost"
+                    disabled={override.isPending}
+                    onClick={() =>
+                      override.mutate({ draftId: draft.id, requestedStatus: 'license_current' })
+                    }
+                  >
+                    {override.isPending ? 'Requesting…' : 'Request: mark license current'}
+                  </button>
+                  <span className="req-note">
+                    What a physician under contract pressure would ask for. The request is
+                    recorded either way.
+                  </span>
+                </div>
+              )}
+
+              {override.data && !override.data.accepted && (
+                <div className="draft-declined" role="status">
+                  <strong>Declined.</strong> {override.data.message}
+                  <span className="draft-declined-detail">
+                    You asked for{' '}
+                    <b>{STATUS_LABEL[override.data.requestedStatus]?.label ?? override.data.requestedStatus}</b>.
+                    The records derive{' '}
+                    <b>{STATUS_LABEL[override.data.derivedStatus]?.label ?? override.data.derivedStatus}</b>
+                    {override.data.rationale ? ` — ${override.data.rationale}.` : '.'}
+                  </span>
+                </div>
+              )}
+              {override.isError && (
+                <div className="empty-mini error">{override.error.message}</div>
+              )}
+
               <p className="req-note">
                 Approving records your sign-off. It does not change your license records or
                 authorize practice anywhere.

@@ -903,6 +903,28 @@ select.input {
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* The out-of-policy request and its decline.
+   Set apart from the approve/reject row: those are decisions the physician gets
+   to make, this is one they do not. The decline uses the bad tone rather than
+   warn because it is a refusal, not a caution. */
+.draft-override {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-top: 10px; padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+.draft-override .req-note { margin: 0; flex: 1 1 220px; min-width: 0; }
+
+.draft-declined {
+  margin-top: 9px; padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--bad, var(--warn)) 32%, transparent);
+  background: var(--bad-bg, var(--warn-bg));
+  border-radius: 8px;
+  font-size: 12.5px; line-height: 1.55; color: var(--ink-2);
+}
+.draft-declined strong { color: var(--bad, var(--warn)); font-weight: 700; }
+.draft-declined-detail { display: block; margin-top: 5px; color: var(--ink-3); }
+.draft-declined-detail b { color: var(--ink-2); font-weight: 600; }
+
 /* Decided drafts — visually distinct from pending so a reviewed state is never
    mistaken for one still awaiting sign-off. */
 .draft-card.decided.approved  { border-left-color: var(--ok); }

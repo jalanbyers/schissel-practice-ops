@@ -10,12 +10,28 @@ import {
   insertDrafts,
   replacePendingDraftsForContract,
   deleteDraftsByIds,
+  recordOverrideRequest,
   reviewDraft,
   type ReviewDecision,
 } from '@schissel/db';
 import { requireMfa, requireRole } from '../plugins/rbac.js';
 
 const DECISIONS: ReviewDecision[] = ['approve', 'edit', 'reject', 'escalate'];
+
+/**
+ * The statuses a physician may *request* on a draft.
+ *
+ * A fixed list rather than free text on purpose. The point is to let a physician
+ * ask for something the records do not support and watch the gate decline it —
+ * which needs no prompt box, and a prompt box would add an injection surface for
+ * nothing.
+ */
+const REQUESTABLE_STATUSES = [
+  'license_current',
+  'renewal_needed',
+  'application_in_progress',
+  'new_application_needed',
+] as const;
 
 /**
  * Licensure analyst routes.
@@ -170,6 +186,92 @@ export const licensureRoutes: FastifyPluginAsync<{ db: DrizzleDb }> = async (fas
     return contractId
       ? getDraftsByContract(db, request.tenantId, contractId)
       : getDraftsByTenant(db, request.tenantId);
+  });
+
+  /**
+   * Request a status the records do not support, and be declined.
+   *
+   * Deliberately NOT the `edit` path. An edit is stored verbatim — a physician
+   * correcting their own record is exercising the judgment this design defers to
+   * them — so routing an override through it would *accept* the request and show
+   * "license current", which is the opposite of the demonstration.
+   *
+   * The status comes from the draft's payload, where it was computed from the
+   * records by date arithmetic. Nothing here consults the model: the guarantee
+   * being shown is structural, so it can be shown without one — instantly, and
+   * identically every time.
+   *
+   * The attempt is recorded either way. That record is the override signal the
+   * monitoring row attaches a threshold to, which is why it is data rather than
+   * a sentence in an audit label.
+   */
+  fastify.post<{
+    Params: { id: string };
+    Body: { requestedStatus?: string };
+  }>('/drafts/:id/override-request', async (request, reply) => {
+    const { requestedStatus } = request.body ?? {};
+
+    if (
+      !requestedStatus ||
+      !(REQUESTABLE_STATUSES as readonly string[]).includes(requestedStatus)
+    ) {
+      return reply.status(400).send({
+        error: `requestedStatus must be one of: ${REQUESTABLE_STATUSES.join(', ')}`,
+      });
+    }
+
+    let draft;
+    try {
+      draft = await getDraftById(db, request.tenantId, request.params.id);
+    } catch (err) {
+      if (err instanceof NotFoundError) {
+        return reply.status(404).send({ error: 'Draft not found.' });
+      }
+      throw err;
+    }
+
+    if (draft.approvalStatus !== 'pending') {
+      return reply.status(409).send({
+        error: 'This draft has already been decided. Re-analyze the state to reopen it.',
+      });
+    }
+
+    const payload = (draft.payload ?? {}) as Record<string, unknown>;
+    const derivedStatus = String(payload['status'] ?? 'unknown');
+    const rationale = payload['status_rationale'] ? String(payload['status_rationale']) : null;
+    const accepted = requestedStatus === derivedStatus;
+
+    const record = await recordOverrideRequest(db, request.tenantId, {
+      draftId: draft.id,
+      state: draft.state,
+      requestedStatus,
+      derivedStatus,
+      rationale,
+      requestedBy: request.userId,
+    });
+
+    await insertAuditEvent(db, request.tenantId, {
+      action: 'licensure.override_request',
+      entity: 'licensure_draft',
+      entityId: draft.id,
+      label: accepted
+        ? `${draft.state}: requested ${requestedStatus}, already the derived status`
+        : `${draft.state}: requested ${requestedStatus}, declined — records derive ${derivedStatus}`,
+      userId: request.userId,
+    });
+
+    return reply.status(200).send({
+      accepted,
+      state: draft.state,
+      requestedStatus,
+      derivedStatus,
+      rationale,
+      statusSource: payload['status_source'] ?? 'derived_from_records',
+      recordedAt: record.createdAt,
+      message: accepted
+        ? `${derivedStatus} is already what the records support, so there is nothing to override.`
+        : 'The status is computed from the records, not proposed — so this cannot be granted. Your request is recorded.',
+    });
   });
 
   /**

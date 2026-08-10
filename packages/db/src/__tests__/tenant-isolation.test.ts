@@ -39,6 +39,11 @@ import {
   reviewDraft,
 } from '../queries/licensure_drafts.js';
 import {
+  recordOverrideRequest,
+  getOverrideRequestsByTenant,
+  getOverrideStats,
+} from '../queries/licensure_override_requests.js';
+import {
   getChecklistByTenant,
   getChecklistTaskById,
   insertChecklistTask,
@@ -343,6 +348,75 @@ describe('licensure drafts — approval gate', () => {
         const d = await getDraftById(db, TENANT_B, id);
         expect(d.approvalStatus).not.toBe('approved');
       }
+    });
+  });
+
+  // Faculty asked for two things that turn out to be one feature: capture the
+  // override data before the pilot that exists to collect it, and put the
+  // decline on screen where the consequence lives. A row here is both.
+  describe('override requests', () => {
+    async function seedFor(state: string, status: string) {
+      const [id] = await insertDrafts(db, TENANT_B, [{
+        contractId: 'SYN-CONTRACT-OVR',
+        state,
+        plannedCareDate: '2026-10-01',
+        payload: { state, status, status_rationale: 'expires before the care date' },
+      }]);
+      return id!;
+    }
+
+    it('declines a request that disagrees with the derived status', async () => {
+      const id = await seedFor('FL', 'renewal_needed');
+      const row = await recordOverrideRequest(db, TENANT_B, {
+        draftId: id, state: 'FL',
+        requestedStatus: 'license_current',
+        derivedStatus: 'renewal_needed',
+        rationale: 'expires before the care date',
+        requestedBy: 'user-1',
+      });
+      expect(row.accepted).toBe('false');
+      expect(row.requestedStatus).toBe('license_current');
+      expect(row.derivedStatus).toBe('renewal_needed');
+    });
+
+    it('acceptance is computed, not caller-supplied', async () => {
+      // The caller cannot assert that the gate held. Same status in both
+      // fields is the only way `accepted` is ever true.
+      const id = await seedFor('CA', 'license_current');
+      const row = await recordOverrideRequest(db, TENANT_B, {
+        draftId: id, state: 'CA',
+        requestedStatus: 'license_current',
+        derivedStatus: 'license_current',
+        requestedBy: 'user-1',
+      });
+      expect(row.accepted).toBe('true');
+    });
+
+    it('is tenant-scoped', async () => {
+      const id = await seedFor('TX', 'new_application_needed');
+      await recordOverrideRequest(db, TENANT_B, {
+        draftId: id, state: 'TX',
+        requestedStatus: 'license_current',
+        derivedStatus: 'new_application_needed',
+        requestedBy: 'user-1',
+      });
+      expect(await getOverrideRequestsByTenant(db, TENANT_A)).toHaveLength(0);
+      expect((await getOverrideRequestsByTenant(db, TENANT_B)).length).toBeGreaterThan(0);
+    });
+
+    it('produces the rate the monitoring threshold is defined against', async () => {
+      const stats = await getOverrideStats(db, TENANT_B);
+      expect(stats.total).toBeGreaterThan(0);
+      expect(stats.declined).toBeGreaterThan(0);
+      expect(stats.declinedRate).toBeGreaterThan(0);
+      expect(stats.declinedRate).toBeLessThanOrEqual(1);
+    });
+
+    it('reports no rate rather than a rate of zero when there is no data', async () => {
+      // "0%" and "nothing happened yet" mean different things to a threshold.
+      const stats = await getOverrideStats(db, TENANT_A);
+      expect(stats.total).toBe(0);
+      expect(stats.declinedRate).toBeNull();
     });
   });
 

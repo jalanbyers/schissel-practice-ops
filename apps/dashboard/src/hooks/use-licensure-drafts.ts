@@ -104,6 +104,55 @@ export function useRunLicensureAnalysis(contractId: string) {
   });
 }
 
+export interface OverrideRequestResult {
+  accepted: boolean;
+  state: string;
+  requestedStatus: string;
+  derivedStatus: string;
+  rationale: string | null;
+  statusSource: string;
+  message: string;
+}
+
+/**
+ * Ask for a status the records do not support, and be declined on screen.
+ *
+ * Not part of `useReviewDraft`: an edit is *accepted* verbatim, so routing this
+ * through it would show the requested status rather than the refusal. This hits
+ * a separate endpoint that compares the request against the status computed from
+ * the records, records the attempt, and returns the decline.
+ *
+ * The result is held in component state rather than written into the draft. The
+ * draft is unchanged — that is the point — so there is nothing to invalidate.
+ */
+export function useRequestOverride() {
+  return useMutation<OverrideRequestResult, Error, { draftId: string; requestedStatus: string }>({
+    mutationFn: async ({ draftId, requestedStatus }) => {
+      if (USE_MOCK) {
+        await new Promise((r) => setTimeout(r, 350));
+        return {
+          accepted: false,
+          state: '',
+          requestedStatus,
+          derivedStatus: 'renewal_needed',
+          rationale: 'license expires 2026-09-18, which is 13 days BEFORE the planned first patient-care date 2026-10-01',
+          statusSource: 'derived_from_records',
+          message:
+            'The status is computed from the records, not proposed — so this cannot be granted. Your request is recorded.',
+        };
+      }
+      return clientJson<OverrideRequestResult>(
+        `/licensure/drafts/${encodeURIComponent(draftId)}/override-request`,
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ requestedStatus }),
+        },
+      );
+    },
+  });
+}
+
 export type ReviewDecision = 'approve' | 'edit' | 'reject' | 'escalate';
 
 /**

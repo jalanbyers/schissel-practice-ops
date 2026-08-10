@@ -166,6 +166,21 @@ export async function setupSchema(db: DrizzleDb): Promise<void> {
   `);
 
   await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS licensure_override_requests (
+      id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+      tenant_id        TEXT        NOT NULL,
+      draft_id         UUID        NOT NULL,
+      state            TEXT        NOT NULL,
+      requested_status TEXT        NOT NULL,
+      derived_status   TEXT        NOT NULL,
+      rationale        TEXT,
+      accepted         TEXT        NOT NULL,
+      requested_by     TEXT,
+      created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `);
+
+  await db.execute(sql`
     CREATE TABLE IF NOT EXISTS audit_log (
       id          UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
       tenant_id   TEXT          NOT NULL,
