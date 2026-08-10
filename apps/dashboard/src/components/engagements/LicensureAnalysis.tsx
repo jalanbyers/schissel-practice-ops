@@ -114,7 +114,19 @@ function DraftCard({ draft, contractId }: { draft: LicensureDraft; contractId: s
 
   useLayoutEffect(() => {
     setBodyHeight(open ? (bodyRef.current?.scrollHeight ?? 0) : 0);
-  }, [open, noteFor, review.isPending, draft.approvalStatus, draft.payload]);
+  }, [
+    open,
+    noteFor,
+    review.isPending,
+    draft.approvalStatus,
+    draft.payload,
+    // The decline block appears after the card is already open, so it grows the
+    // body past the height measured on expand. Without these the new content is
+    // simply clipped by the max-height that was correct a moment earlier.
+    override.isPending,
+    override.data,
+    override.isError,
+  ]);
 
   /**
    * Reject and escalate ask for a note first — a decision to override or defer
@@ -269,11 +281,17 @@ function DraftCard({ draft, contractId }: { draft: LicensureDraft; contractId: s
               {review.isError && <div className="empty-mini error">{review.error.message}</div>}
 
               {/*
-                The out-of-policy request, as a fixed control rather than a prompt
-                box. The refusal is the moment a reviewer most needs to see the
-                gate hold, and until now it held everywhere except on screen. One
-                button asking for one known status needs no free text — and free
-                text would add an injection surface for nothing.
+                A real request channel, not a demo affordance.
+                A physician facing a contract deadline will want the status
+                changed. Offering nowhere to ask does not prevent that — it moves
+                it somewhere unobservable, into editing the record by hand or
+                abandoning the tool. Here the ask is made, answered by the same
+                arithmetic that produced the status, and logged either way, which
+                is what turns pressure into a measurable signal.
+
+                Fixed request rather than free text: one button asking for one
+                known status needs no prompt box, and a prompt box would add an
+                injection surface for nothing.
 
                 Offered only where there is something to want overridden; on a
                 state already current the request has no meaning.
@@ -282,7 +300,7 @@ function DraftCard({ draft, contractId }: { draft: LicensureDraft; contractId: s
                 <div className="draft-override">
                   <button
                     type="button"
-                    className="btn ghost"
+                    className="btn request-override"
                     disabled={override.isPending}
                     onClick={() =>
                       override.mutate({ draftId: draft.id, requestedStatus: 'license_current' })
@@ -291,8 +309,7 @@ function DraftCard({ draft, contractId }: { draft: LicensureDraft; contractId: s
                     {override.isPending ? 'Requesting…' : 'Request: mark license current'}
                   </button>
                   <span className="req-note">
-                    What a physician under contract pressure would ask for. The request is
-                    recorded either way.
+                    Recorded with the reason it was granted or declined.
                   </span>
                 </div>
               )}
