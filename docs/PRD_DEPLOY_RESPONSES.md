@@ -109,15 +109,23 @@ The rest is not instrumented. The signals exist — the audit log and the eval s
 
 **Two build items this row depends on, named rather than assumed.**
 
-*Override capture, before the pilot starts.* Stage one exists to collect real
-override data, and a pilot whose purpose is gathering that data cannot fulfil it
-by hand. Today a physician edit overwrites the agent's assessment in place, and
-the only surviving record of the disagreement is an English sentence in the audit
-label — so override rate would have to be recovered by parsing prose. The fix is
-to preserve the agent's original payload alongside the physician's, and derive
-the override rather than store a flag that can drift from the payloads it
-describes. This is wiring, not research, and it belongs before stage one rather
-than after it.
+*Override capture — half done, and I want to be exact about which half.* Stage one
+exists to collect real override data, and a pilot whose purpose is gathering it
+cannot fulfil that by hand. There are two ways a physician disagrees with the
+agent, and they are now in different states.
+
+A **declined override request** — the physician asks for a status the records do
+not support — is captured. Requested status and derived status are stored side by
+side per draft, so that rate is countable rather than parsed out of prose. Building
+it is also what let the refusal move from a terminal into the interface: the ask
+is made on the card, declined there, and recorded either way.
+
+An **edit that changes a status** is not. That path still overwrites the agent's
+assessment in place, so the only surviving trace of the disagreement is an English
+sentence in the audit label. The fix is the same shape — keep the agent's original
+payload alongside the physician's and derive the override rather than store a flag
+that can drift from the payloads it describes — and it is the remaining piece
+before stage one, not after it.
 
 *An "acknowledged, in progress" decision.* The four review actions cannot express
 the most common real case: the physician agrees a licence needs renewing and has
