@@ -88,10 +88,15 @@ print_monitoring() {
   echo
   echo "${bold}Post-launch monitoring — thresholds that trigger action${off}"
   rule
-  printf "  ${bold}Quality${off}\n"
-  printf "    %-42s %s\n" "Physician override rate"        "${ylw}> 20% of a rolling 20${off} → re-run evals"
+  printf "  ${bold}Quality${off}  ${dim}is it still right?${off}\n"
+  printf "    %-42s %s\n" "Override rate (edit or reject)"  "${ylw}> 20% of a rolling 20${off} → re-run evals"
   printf "    %-42s %s\n" "Evaluation suite"               "${ylw}anything below 6/6${off} → stop using output"
   printf "    %-42s %s\n" "Missed escalation"              "${ylw}any single instance${off} → becomes a new case"
+  printf "  ${bold}Pressure${off}  ${dim}tracked apart from quality, on purpose${off}\n"
+  printf "    %-42s %s\n" "Declined override requests"     "${ylw}rising while override rate holds${off}"
+  printf "    %-42s ${dim}%s${off}\n" ""                    "asking for a status the records do not support is not"
+  printf "    %-42s ${dim}%s${off}\n" ""                    "the agent losing calibration - it is the physician under"
+  printf "    %-42s ${dim}%s${off}\n" ""                    "a deadline. Same number, opposite diagnosis."
   printf "  ${bold}Value${off}\n"
   printf "    %-42s %s\n" "Escalation rate"                "${ylw}outside 5-40%${off} (baseline ~17%)"
   printf "    %-42s %s\n" "Analysis to physician decision"  "${ylw}median > 48h${off} → workflow problem"
@@ -101,7 +106,11 @@ print_monitoring() {
   printf "    %-42s %s\n" "Refusal-filter firings"         "${ylw}≥3 in a week${off} → prompt regression"
   printf "    %-42s %s\n" "Requirement freshness"          "${ylw}> 25% past 90 days${off} → refresh data"
   rule
-  printf "  ${dim}Signals exist today; the thresholds are written, not yet instrumented.${off}\n"
+  printf "  ${grn}Wired:${off} ${dim}override requests are captured as structured rows - requested vs${off}\n"
+  printf "         ${dim}derived status, per draft - so the rate above is countable, not parsed.${off}\n"
+  printf "  ${ylw}Not wired:${off} ${dim}everything else. The signals exist; the thresholds live in this${off}\n"
+  printf "             ${dim}script rather than in an alert, and stage two should not start${off}\n"
+  printf "             ${dim}until they do.${off}\n"
   echo
 
 }

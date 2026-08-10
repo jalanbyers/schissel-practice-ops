@@ -2,7 +2,7 @@
 
 Paste each block into the matching **Student Response** cell. Written to stand alone, no link-outs, per the PRD instruction. First person, in Alan's voice.
 
-Grounded in the build as of 2026-07-23: 6/6 eval cases passing, 113 agent unit tests, 28 db, 28 api, full loop (analyze → draft → physician review → audit) verified end-to-end against live services.
+Grounded in the build as of 2026-07-23: 6/6 eval cases passing, 123 agent unit tests, 37 db, 28 api, full loop (analyze → draft → physician review → audit) verified end-to-end against live services.
 
 ---
 
@@ -15,10 +15,10 @@ Against the six readiness checks:
 
 | Check | Verdict |
 |---|---|
-| Evals pass | **Yes.** 6/6 cases, deterministic scoring, plus 115 unit tests. The acceptance case fails the build on its own if the agent stops catching Ohio's defective language from the prose. |
+| Evals pass | **Yes.** 6/6 cases, deterministic scoring, plus 123 unit tests. The acceptance case fails the build on its own if the agent stops catching Ohio's defective language from the prose. |
 | Boundary enforced in the product | **Yes, structurally.** The status is computed from the records by date arithmetic, so the model cannot be argued into one. The agent has no tool that can submit, publish, contact a board, or declare me authorized. A phrase filter sits on top, and I have measured its limit — see the risk row. |
 | Owners named | **Yes, and it is one person.** I am the operator, the escalation owner, and the decision owner. That is honest for a solo practice, and it is also the pilot's biggest weakness: there is nobody to catch me rubber-stamping. |
-| Metrics with thresholds | **Written, not instrumented.** Every signal in the monitoring row has a number and a triggered action. They live in this document rather than in an alert, and I would not run stage two without wiring them up. |
+| Metrics with thresholds | **One wired, the rest written.** Every signal in the monitoring row has a number and a triggered action. Override requests are now captured as structured rows, so that rate is countable rather than parsed out of prose — the change faculty asked for before the pilot. The remaining thresholds live in this document rather than in an alert, and I would not run stage two until they do. |
 | Rollback exists | **Yes, and it is genuinely reversible.** Pause is not clicking the button; the hard switch fails closed with an explicit 503; the manual process never stopped; and no draft can reach a licence record, so a rollback leaves no bad data. Detail in the pilot row. |
 | Privacy reviewed | **Reasoned, not formally reviewed.** The narrowing below is my own data-classification decision. This capstone is synthetic end to end; a real pilot would require a formal privacy review before it started, not after. |
 
@@ -26,7 +26,7 @@ What still needs to be true before a launch on real data, honestly:
 
 First, the data boundary has to be settled, and I have settled it. The repository's original rule said anything touching license documents stays off the cloud agent. I am narrowing that rule rather than leaving it ambiguous: the agent works only with structured license *records* — state code, board name and URL, a last-checked date, and requirement text — which carry no patient information and no individually identifiable health information. The physician's own license status is practice-operations data, not patient data. Contract PDFs, scanned license images, and billing records stay off the cloud agent, which is what that rule was actually written to protect. That narrowing is what makes a cloud deployment defensible, and a real launch would want it written down as a data-classification decision with sign-off rather than left implicit.
 
-Second, three build items are genuinely not done: the frozen five-state dataset would need to become live, source-checked board data with a real freshness process behind the 90-day rule; multi-user access needs the identity claims wired up (the tenant, role, and MFA claims the API already expects but the current auth tenant does not issue); and there is no production monitoring yet. None of these change the agent's judgment — they are the operational scaffolding around it.
+Second, three build items are genuinely not done: the frozen six-state dataset would need to become live, source-checked board data with a real freshness process behind the 90-day rule; multi-user access needs the identity claims wired up (the tenant, role, and MFA claims the API already expects but the current auth tenant does not issue); and there is no production monitoring yet. None of these change the agent's judgment — they are the operational scaffolding around it.
 
 I would not launch it as anything that decides, submits, or authorizes. It advises, and a human approves. That constraint is the product, not a limitation to remove later.
 
@@ -80,6 +80,7 @@ A signal nobody acts on is not monitoring, so each one below has a number attach
 | Signal | Threshold | Action |
 |---|---|---|
 | Physician override rate (edit or reject) | >20% over a rolling 20 drafts | Stop relying on output; re-run the eval suite; treat the overrides as a labeled failure set |
+| **Declined override requests** — tracked apart from the above | rising while override rate holds steady | A physician asking for a status the records do not support is not the agent losing calibration; it is the physician under a deadline. Same number, opposite diagnosis — so it gets its own line rather than being folded into quality. |
 | Eval suite | anything below 6/6 | Stop using the agent's output until the failing case is fixed. Re-run monthly, and after *any* model, prompt, or data change |
 | Missed escalation — a state the physician escalates that the agent passed | any single instance | Becomes a new eval case before the next run |
 
@@ -102,7 +103,9 @@ A signal nobody acts on is not monitoring, so each one below has a number attach
 
 I would also read the audit log periodically — not as a metric but as a qualitative check on whether approvals look like careful review or like rubber-stamping. A physician approving five states in ninety seconds is a finding even if every status was right.
 
-Honestly, none of this is instrumented yet. The prototype emits the raw signals — the override record, the audit log, and the eval suite all exist and run — but the thresholds above live in this document rather than in an alert. Wiring them up is launch scaffolding I have not built, and I would not run stage two without it.
+One of these is now wired rather than promised. Override requests are captured as structured rows — requested status against derived status, per draft — so that rate is countable rather than recovered by parsing prose out of an audit label. That was the change faculty asked for before the pilot, and it is also what let the refusal move from a terminal into the interface: the physician can ask for a status the records do not support, watch it declined, and the ask is recorded either way.
+
+The rest is not instrumented. The signals exist — the audit log and the eval suite both run — but the remaining thresholds live in this document rather than in an alert, and I would not start stage two until they do.
 
 **Two build items this row depends on, named rather than assumed.**
 
